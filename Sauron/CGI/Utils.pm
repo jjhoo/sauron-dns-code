@@ -12,6 +12,10 @@ use Sauron::Util;
 use Sauron::Sauron;
 use strict;
 use vars qw(@ISA @EXPORT);
+use Sys::Syslog qw(:DEFAULT setlogsock);
+Sys::Syslog::setlogsock('unix');
+use Data::Dumper;
+
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -43,6 +47,17 @@ our %host_types;
 	     4=>'Alias',5=>'Printer',6=>'Glue record',7=>'AREC Alias',
 	     8=>'SRV record',9=>'DHCP only',10=>'zone',
 	     101=>'Host reservation');
+
+
+sub write2log{
+  my $msg       = shift;
+  my $filename  = File::Basename::basename($0);
+
+  Sys::Syslog::openlog($filename, "cons,pid", "debug");
+  Sys::Syslog::syslog("info", "$msg");
+  Sys::Syslog::closelog();
+} # End of write2log
+
 
 
 sub chk_perms($$$$) {
@@ -102,6 +117,7 @@ sub chk_perms($$$$) {
     return 1;
   }
   elsif ($type eq 'ip') {
+    
     @n=keys %{$perms{net}};
     return 0  if (@n < 1 && @{$perms{ipmask}} < 1);
     $ip=ip2int($rule); #print "<br>ip=$rule ($ip)";
@@ -116,6 +132,7 @@ sub chk_perms($$$$) {
     }
     for $i (0..$#{$perms{ipmask}}) {
 	$re=$perms{ipmask}[$i];
+
 	#print p,"regexp='$re' '$rule'";
 	return 0 if (check_ipmask($re,$rule));
     }
