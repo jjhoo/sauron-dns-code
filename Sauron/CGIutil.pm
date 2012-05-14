@@ -638,7 +638,7 @@ sub form_magic($$$) {
 	print "<TR>",hidden(-name=>$p2."_id",-value=>param($p2."_id"));
 
 	$n=$p2."_1";
-	print "<TD>",textfield(-name=>$n,-size=>15,-value=>param($n));
+	print "<TD>",textfield(-name=>$n,-size=>40,-value=>param($n));
         print "<FONT size=-1 color=\"red\"><BR>",
               form_check_field($rec,param($n),1),"</FONT></TD>";
 
@@ -665,7 +665,7 @@ sub form_magic($$$) {
       unless ($rec->{restricted_mode}) {
 	$j=$a+1;
 	$n=$prefix."_".$rec->{tag}."_".$j."_1";
-	print "<TR>",td(textfield(-name=>$n,-size=>15,-value=>param($n))),
+	print "<TR>",td(textfield(-name=>$n,-size=>40,-value=>param($n))),
 	      td(submit(-name=>$prefix."_".$rec->{tag}."_add",-value=>'Add')),
 	      "</TR>";
       }
@@ -834,7 +834,7 @@ sub form_magic($$$) {
 				-values=>[0,1],-labels=>{0=>' ',1=>'NOT'})),
 	          "<TD>";
 	    if ($aml_mode == 0) {
-		print textfield(-name=>$p2."_2",-size=>18,-maxlength=>18,
+		print textfield(-name=>$p2."_2",-size=>42,-maxlength=>42,
 				-value=>$aml_cidr),
 		      hidden(-name=>$p2."_3",$aml_acl),
   		      hidden(-name=>$p2."_4",$aml_key);
@@ -868,7 +868,7 @@ sub form_magic($$$) {
 	      "<TD rowspan=3 bgcolor=\"#efefef\">",
 	      popup_menu(-name=>$p2."_5",-default=>'0',
 			    -values=>[0,1],-labels=>{0=>' ',1=>'NOT'}),"</TD>",
-	      "<TD>",textfield(-name=>$p2."_2",-size=>18,-maxlength=>18,
+	      "<TD>",textfield(-name=>$p2."_2",-size=>42,-maxlength=>42,
 			   -value=>''),
 	      "</TD><TD rowspan=3 bgcolor=\"#efefef\">",
 	      textfield(-name=>$p2."_6",-size=>25,-maxlength=>80,
