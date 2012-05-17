@@ -108,7 +108,6 @@ unless ($opt_dhcponly) {
 }
 
 for $i (0..$#q) {
-
     if ($opt_cidr) {
 	($net=$q[$i][0]);
     } else {
