@@ -205,7 +205,7 @@ sub add_default_zones($$) {
 
   my($id,%zone,%host);
 
-  %zone=(name=>'localhost',type=>'M',reverse=>'f',server=>$serverid,
+  %zone=(name=>'localhost',type=>'M',comment=>'Default zone', reverse=>'f',server=>$serverid,
      ns=>[[0,'localhost.','']],ip=>[[0,'::1','t','t',''],[0,'127.0.0.1','t','t','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -214,7 +214,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'127.in-addr.arpa',type=>'M',reverse=>'t',server=>$serverid,
+  %zone=(name=>'127.in-addr.arpa',type=>'M',comment=>'Default zone', reverse=>'t',server=>$serverid,
     ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -223,7 +223,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'0.in-addr.arpa',type=>'M',reverse=>'t',server=>$serverid,
+  %zone=(name=>'0.in-addr.arpa',type=>'M',comment=>'Default zone', reverse=>'t',server=>$serverid,
     ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -232,7 +232,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'255.in-addr.arpa',type=>'M',reverse=>'t',server=>$serverid,
+  %zone=(name=>'255.in-addr.arpa',type=>'M',comment=>'Default zone', reverse=>'t',server=>$serverid,
     ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -241,7 +241,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa',type=>'M',reverse=>'t',server=>$serverid,
+  %zone=(name=>'1.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa',type=>'M', comment=>'Default zone', reverse=>'t',server=>$serverid,
     ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -250,7 +250,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,
+  %zone=(name=>'0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.0.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,
     ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
@@ -259,7 +259,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'d.f.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
+  %zone=(name=>'d.f.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
     print "failed (zone already exists? $id)\n";
@@ -267,7 +267,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'8.e.f.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
+  %zone=(name=>'8.e.f.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
     print "failed (zone already exists? $id)\n";
@@ -275,7 +275,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'9.e.f.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
+  %zone=(name=>'9.e.f.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
     print "failed (zone already exists? $id)\n";
@@ -283,7 +283,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'a.e.f.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
+  %zone=(name=>'a.e.f.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
     print "failed (zone already exists? $id)\n";
@@ -291,7 +291,7 @@ sub add_default_zones($$) {
     print "OK (id=$id)\n";
   }
 
-  %zone=(name=>'b.e.f.ip6.arpa',type=>'M',comment=>'Default reverse empty zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
+  %zone=(name=>'b.e.f.ip6.arpa',type=>'M',comment=>'Default zone',reverse=>'t',server=>$serverid,ns=>[[0,'localhost.','']]);
   print "Adding zone: $zone{name}...";
   if (($id=add_zone(\%zone)) < 0) {
     print "failed (zone already exists? $id)\n";
