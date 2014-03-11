@@ -1016,6 +1016,7 @@ sub display_form($$) {
       next if ($rec->{no_empty} && $val eq '');
 
       $val =~ s/\/32$// if ($rec->{type} eq 'ip');
+      $val =~ s/\/128$// if ($rec->{type} eq 'ip');
       $val = $val . sprintf(" (0x%0" . $rec->{extrahex} . "x)", $val) if ($rec->{extrahex} and $val ne "");
       if ($rec->{type} eq 'expiration') {
 	unless ($val > 0) {
@@ -1051,6 +1052,7 @@ sub display_form($$) {
 	for $k (1..$rec->{fields}) {
 	  $val=$$a[$j][$k];
 	  $val =~ s/\/32$// if ($rec->{type}[$k-1] eq 'ip');
+	  $val =~ s/\/128$// if ($rec->{type}[$k-1] eq 'ip');
 	  $val='&nbsp;' if ($val eq '');
 	  print td($val);
 	}
@@ -1071,7 +1073,7 @@ sub display_form($$) {
       for $j (1..$#{$a}) {
 	#$com=$$a[$j][4];
 	$ip=$$a[$j][1];
-	$ip=~ s/\/\d{1,2}$//g;
+	$ip=~ s/\/\d{1,3}$//g;
 	$ipinfo='';
 	$ipinfo.=' (no reverse)' if ($$a[$j][2] ne 't' && $$a[$j][2] != 1);
 	$ipinfo.=' (no A record)' if ($$a[$j][3] ne 't' && $$a[$j][3] != 1 and ip_is_ipv4($ip));
