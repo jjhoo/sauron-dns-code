@@ -43,7 +43,7 @@ my %new_net_form=(
    enum=>{t=>'Subnet',f=>'Net'}},
   {ftype=>4, tag=>'dummy', name=>'Virtual subnet', type=>'enum',
    enum=>{t=>'Yes',f=>'No'},iff=>['subnet','t',1]},
-  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr'},
+  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr', len=>43},
   {ftype=>1, tag=>'comment', name=>'Comment', type=>'text',
    len=>60, empty=>1}
  ]
@@ -61,7 +61,7 @@ my %net_form=(
    enum=>{t=>'Subnet',f=>'Net'}},
   {ftype=>3, tag=>'dummy', name=>'Virtual subnet', type=>'enum',
    enum=>{t=>'Yes',f=>'No'},iff=>['subnet','t',1]},
-  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr'},
+  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr', len=>43},
   {ftype=>3, tag=>'vlan', name=>'VLAN', type=>'enum', conv=>'L',
    enum=>\%vlan_list_hash, elist=>\@vlan_list_lst, restricted=>1,
    iff=>['dummy','f']},
