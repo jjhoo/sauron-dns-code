@@ -2,6 +2,7 @@
 #
 # generatehosts - utility to add host records
 #
+# Copyright (c) Michal Kostenec <kostenec@civ.zcu.cz> 2013-2014.
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2001-2004.
 #
 require 5;

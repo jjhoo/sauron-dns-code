@@ -1,5 +1,6 @@
 # Sauron::CGI::Hosts.pm
 #
+# Copyright (c) Michal Kostenec <kostenec@civ.zcu.cz> 2013-2014.
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2005.
 #
 package Sauron::CGI::Hosts;
