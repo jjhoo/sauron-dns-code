@@ -16,7 +16,6 @@ use strict;
 use vars qw(@ISA @EXPORT);
 use Sys::Syslog qw(:DEFAULT setlogsock);
 Sys::Syslog::setlogsock('unix');
-use Data::Dumper;
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

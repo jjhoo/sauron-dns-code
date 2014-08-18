@@ -13,7 +13,6 @@ use Sauron::Util;
 use Sauron::UtilDhcp;
 use Sauron::BackEnd;
 use Sauron::Sauron;
-use Data::Dumper;
 use Net::IP;
 
 load_config();
@@ -270,7 +269,6 @@ foreach $key (sort keys %{$data{subclass}}) {
   }
 }
 
-#print Dumper(\%sclass2class);
 
 # dhcp pools
 $pool_section = (!$opt_dhcp6 ? 'pool' : 'pool6');
