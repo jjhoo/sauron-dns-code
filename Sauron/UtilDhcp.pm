@@ -70,7 +70,7 @@ sub process_line($$$$) {
 
   return if ($line =~ /^\s*$/);
   $line =~ s/(^\s+|\s+$)//g;
-  $line =~ s/\"//g;
+  #$line =~ s/\"//g;
 
 
   #if ($line =~ /^(\S+)\s+(\S.*)?{$/) {
