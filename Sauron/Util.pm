@@ -77,8 +77,11 @@ sub valid_domainname_check($$) {
 
   $dom="\L$domain";
 
-  if ($dom =~ 
-      /^(\d{1,3}\.)?(\d{1,3}\.)?(\d{1,3}\.)?\d{1,3}\.in-addr\.arpa\.?$/)  {
+  if ($dom =~ /^(\d{1,3}\.)?(\d{1,3}\.)?(\d{1,3}\.)?\d{1,3}\.in-addr\.arpa\.?$/)  {
+    return 1;
+  }
+
+  if ($dom =~ /^([a-fA-f0-9]\.){32}ip6\.arpa\.?$/) {
     return 1;
   }
 
@@ -114,7 +117,7 @@ sub valid_domainname_check($$) {
         return 0;
       }
 
-      unless ($dom =~ /^[a-z_]/) {
+      unless ($dom =~ /^[a-z0-9_]/) {
         #warn("domainname starts with invalid character: '$domain'");
         return 0;
       }
@@ -124,7 +127,7 @@ sub valid_domainname_check($$) {
         return 0;
       }
 
-      unless ($dom =~ /^[a-z]/) {
+      unless ($dom =~ /^[a-z0-9]/) {
         #warn("domainname starts with invalid character: '$domain'");
         return 0;
       }
