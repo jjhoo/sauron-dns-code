@@ -1525,6 +1525,8 @@ sub make_dhcp() {
   }
   print DHCPFILE "\n\n";
 
+  #Host declaration for dyn. classes 
+  my $hddc = "";
 
   # dynamic hosts (DHCP classes)
   unless ($dhcp2_mode) {
@@ -1570,7 +1572,9 @@ sub make_dhcp() {
 	    next if ($qq[$j][0] eq $lastmac);
 	    print DHCPFILE "subclass \"$dclasses[$i][1]\" 1:" .
 	                   dhcpether($qq[$j][0]) . ";  # $qq[$j][1]\n";
-	    $lastmac=$qq[$j][0];
+	    
+        $hddc .= sprintf("host %s-%s { hardware ethernet %s; }\n", $qq[$j][1], $dclasses[$i][1], dhcpether($qq[$j][0]));
+        $lastmac=$qq[$j][0];
 	  }
 	}
 
@@ -1895,6 +1899,8 @@ print DHCPFILE "\n";
   undef @ghosts;
   undef %ethers;
 
+  print DHCPFILE "\n#Host declaration for dynamic classes\n";
+  print DHCPFILE $hddc;
 
   print DHCPFILE "\n# eof\n";
   close(DHCPFILE);
@@ -2029,6 +2035,8 @@ sub make_dhcp6() {
   }
   print DHCPFILE "\n\n";
 
+  #Host declaration for dyn. classes 
+  my $hddc = "";
 
   # dynamic hosts (DHCP classes)
   unless ($dhcp2_mode) {
@@ -2077,7 +2085,9 @@ sub make_dhcp6() {
 	    }
 	    next if ($qq[$j][0] eq $lastduid);
 	    print DHCPFILE "subclass \"$dclasses[$i][1]\" ".  dhcpduid($qq[$j][0]) .  ";  # $qq[$j][1]\n";
-	    $lastduid=$qq[$j][0];
+	  
+        $hddc .= sprintf("host %s-%s { host-identifier option dhcp6.client-id %s; }\n", $qq[$j][1], $dclasses[$i][1], dhcpduid($qq[$j][0]));
+        $lastduid=$qq[$j][0];
 	  }
 	}
 
@@ -2390,6 +2400,8 @@ sub make_dhcp6() {
   undef @ghosts;
   undef %duids;
 
+  print DHCPFILE "\n#Host declaration for dynamic classes\n";
+  print DHCPFILE $hddc;
 
   print DHCPFILE "\n# eof\n";
   close(DHCPFILE);
