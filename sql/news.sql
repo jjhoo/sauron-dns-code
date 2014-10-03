@@ -1,6 +1,5 @@
 /* news table creation
  *
- * $Id$
  */
 
 /** This table contains motd/news to be displayed when user logs in...  **/

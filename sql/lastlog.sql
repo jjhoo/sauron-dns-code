@@ -1,6 +1,5 @@
 /* lastlog table creation
  *
- * $Id$
  */
 
 /** lastlog table contains "lastlog" data of database users **/

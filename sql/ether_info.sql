@@ -1,6 +1,5 @@
 /* ether_info table creation
  *
- * $Id$
  */
 
 /** This table contains Ethernet adapter manufacturer codes.  **/

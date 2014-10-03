@@ -1,6 +1,5 @@
 /* printer_entries table creation
  *
- * $Id$
  */
 
 /** This table contains printer definition entries. **/

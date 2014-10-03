@@ -1,6 +1,5 @@
 /* nets table creation
  *
- * $Id$
  */
 
 /** Net/subnet descriptions, linked to server record. 

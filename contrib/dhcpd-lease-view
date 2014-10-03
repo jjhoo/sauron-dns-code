@@ -1,6 +1,5 @@
 #!/usr/bin/perl -w
 #
-# $Id$
 #
 # A dhcpd.leases file viewing utility -- mesrik@cc.jyu.fi
 #
@@ -20,7 +19,7 @@ sub normalise($);
 $debug = 0;
 
 $0 =~ s/.*\///o; # weed the path
-$version = '$Id$';
+$version = '$Id: dhcpd-lease-view,v 1.2 2005/02/15 09:03:07 tjko Exp $';
 
 $now = strftime "%Y/%m/%d %H:%M:%S", gmtime;
 %counter = ();

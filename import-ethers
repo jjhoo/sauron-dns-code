@@ -4,7 +4,6 @@
 #                from text file (Ethernet.txt or IEEE's oui.txt)
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2004.
-# $Id$
 #
 require 5;
 use Getopt::Long;

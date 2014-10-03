@@ -1,6 +1,5 @@
 /* ACLs table creation
  *
- * $Id$
  */
 
 /** ACLs (access control lists) definitions. ACLs can contain

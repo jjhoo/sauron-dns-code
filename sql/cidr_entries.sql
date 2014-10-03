@@ -1,6 +1,5 @@
 /* cidr_entries table creation
  *
- * $Id$
  */
 
 /** This table contains CIDRs (and ACL/Key references) used in server 

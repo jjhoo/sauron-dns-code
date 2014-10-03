@@ -1,6 +1,5 @@
 /* mx_entries table creation
  *
- * $Id$
  */
 
 /** This table contains MX record entries. **/

@@ -1,11 +1,5 @@
 List of codes used on 802.3 and Ethernet networks.
 
-$Revision$
-$Date$
-$Author$
-$Id$
-
-
 This file contains collected information on the various codes used on
 IEEE 802.3 and Ethernet.  There are three "pages" of data: type codes,
 vendor codes, and the uses of multicast (including broadcast) addresses.

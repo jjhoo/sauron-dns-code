@@ -1,7 +1,6 @@
 # Sauron::CGIutil.pm  --  generic CGI stuff
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2001-2003,2005.
-# $Id$
 #
 package Sauron::CGIutil;
 require Exporter;
@@ -11,9 +10,7 @@ use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

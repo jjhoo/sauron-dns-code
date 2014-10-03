@@ -3,7 +3,6 @@
 # update-hosts -- updates hosts from data in CSV format file
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 use Getopt::Long;
 use Sauron::DB;

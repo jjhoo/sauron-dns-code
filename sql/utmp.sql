@@ -1,6 +1,5 @@
 /* utmp table creation
  *
- * $Id$
  */
 
 /** This table contains "utmp" data of currently logged in www-interface

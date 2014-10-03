@@ -1,6 +1,5 @@
 /* ns_entries table creation
  *
- * $Id$
  */
 
 /** This table contains NS resource record definitions. **/

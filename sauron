@@ -3,7 +3,6 @@
 # sauron - generates BIND/DHCP/printer configuration files from database
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2005.
-# $Id$
 #
 require 5;
 use Net::Netmask;

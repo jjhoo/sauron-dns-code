@@ -1,7 +1,7 @@
 #!/usr/bin/perl -I/usr/local/sauron
 #
 # sauron.cgi
-# $Id$
+#
 # [едц~]
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>, 2000-2005.
 # All Rights Reserved.
@@ -25,7 +25,7 @@ $0 = $PG_NAME;
 
 load_config();
 
-$SAURON_CGI_VER = ' $Revision$ $Date$ ';
+$SAURON_CGI_VER = ' $Revision: 1.204 $ $Date: 2005/01/27 09:24:44 $ ';
 $debug_mode = $SAURON_DEBUG_MODE;
 #$|=1;
 

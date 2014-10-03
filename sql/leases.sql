@@ -1,6 +1,5 @@
 /* leases table creation
  *
- * $Id$
  */
 
 /** Stores information about DHCP server leases  **/

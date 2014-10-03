@@ -1,6 +1,5 @@
 /* mx_templates table creation
  *
- * $Id$
  */
 
 /** MX entry templates, hosts may link to one entry in this table.

@@ -1,6 +1,5 @@
 /* user_groups table creation
  *
- * $Id$
  */
 
 /** This table contains records defining user groups.  **/

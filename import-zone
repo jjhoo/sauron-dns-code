@@ -3,7 +3,6 @@
 # import-zone - imports DNS zone from file or directly from DNS
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 require 5;
 use Net::Netmask;

@@ -3,7 +3,6 @@
 # modhosts - utility to modify (move,delete) host records
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2001-2003.
-# $Id$
 #
 require 5;
 use Getopt::Long;

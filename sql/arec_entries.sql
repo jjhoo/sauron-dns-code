@@ -1,6 +1,5 @@
 /* arec_entries table creation
  *
- * $Id$
  */
 
 /** pointers to A record aliased hosts, linked to a host record. **/

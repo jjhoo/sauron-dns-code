@@ -3,7 +3,6 @@
 # import-jyu - imports nonstandard records from .hosts files
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000.
-# $Id$
 #
 # fileformat (similar to BIND Master File format):
 # {<domain>|@|<blank>} [<ignored (ttl)>] [<ignored (class)] <type> <rdata>

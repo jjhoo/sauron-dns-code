@@ -1,6 +1,5 @@
 /* wks_templates table creation
  *
- * $Id$
  */
 
 /** WKS entry templates, hosts may link to one entry

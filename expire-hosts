@@ -3,7 +3,6 @@
 # expire-hosts - utility to expire hosts w/o recent dhcp activity
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2002,2003.
-# $Id$
 #
 require 5;
 use Getopt::Long;

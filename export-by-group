@@ -4,7 +4,6 @@
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2004.
 # Modifications Riku Meskanen <mesrik@iki.fi> 2005.
-# $Id$
 #
 require 5;
 use Getopt::Long;

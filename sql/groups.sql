@@ -1,7 +1,6 @@
 /* groups table creation
  *
  *
- * $Id$
  */
 
 /** Group descriptions, linked to server record. Hosts can "belong" to

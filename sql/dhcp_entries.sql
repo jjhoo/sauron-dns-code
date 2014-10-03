@@ -1,6 +1,5 @@
 /* dhcp_entries table creation
  *
- * $Id$
  */
 
 /** This table contains DHCP options user in various contexts. **/

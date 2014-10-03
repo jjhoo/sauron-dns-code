@@ -1,7 +1,6 @@
 # Sauron::BackEnd.pm  -- Sauron back-end routines
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2005.
-# $Id$
 #
 package Sauron::BackEnd;
 require Exporter;
@@ -9,9 +8,7 @@ use Net::Netmask;
 use Sauron::DB;
 use Sauron::Util;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

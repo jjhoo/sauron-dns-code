@@ -1,6 +1,5 @@
 /* users table creation
  *
- * $Id$
  */
 
 /** This table contains (user interface) user account information. **/

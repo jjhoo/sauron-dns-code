@@ -1,6 +1,5 @@
 /* user_rights table creation
  *
- * $Id$
  */
 
 /** This table contains record defining user rights.  **/

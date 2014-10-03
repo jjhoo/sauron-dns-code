@@ -1,6 +1,5 @@
 /* wks_entries table creation
  *
- * $Id$
  */
 
 /** This table contains WKS record entries. **/

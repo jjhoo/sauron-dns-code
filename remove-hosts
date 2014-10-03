@@ -3,7 +3,6 @@
 # remove-hosts -- removes hosts based on list of MACs read from a file
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 use Getopt::Long;
 use Sauron::DB;

@@ -1,7 +1,6 @@
 # Sauron::Sauron.pm -- configuration file parsing and default settings
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2007.
-# $Id$
 #
 package Sauron::Sauron;
 require Exporter;
@@ -10,9 +9,8 @@ use MIME::Base64 qw(decode_base64);
 use strict;
 use vars qw($VERSION $CONF_FILE_PATH @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id: Sauron.pm,v 1.30 2008/02/28 08:52:47 tjko Exp $ ';
 $CONF_FILE_PATH = '__CONF_FILE_PATH__';
-
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

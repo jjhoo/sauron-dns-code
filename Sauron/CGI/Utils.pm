@@ -1,7 +1,6 @@
 # Sauron::CGI::Utils.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 package Sauron::CGI::Utils;
 require Exporter;
@@ -12,9 +11,7 @@ use Sauron::BackEnd;
 use Sauron::Util;
 use Sauron::Sauron;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

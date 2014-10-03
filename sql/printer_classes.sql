@@ -1,6 +1,5 @@
 /* printer_classes table creation
  *
- * $Id$
  */
 
 /** Global table to store printer classes (printcap stuff)

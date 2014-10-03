@@ -1,6 +1,5 @@
 /* txt_entries table creation
  *
- * $Id$
  */
 
 /** This table contains TXT record entries and miscellaneous text entries. **/

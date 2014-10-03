@@ -1,7 +1,6 @@
 # Sauron::CGI::Nets.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 package Sauron::CGI::Nets;
 require Exporter;
@@ -13,9 +12,7 @@ use Sauron::BackEnd;
 use Sauron::Sauron;
 use Sauron::CGI::Utils;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

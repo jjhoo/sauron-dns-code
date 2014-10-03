@@ -1,6 +1,5 @@
 /* Sauron table templates
  *
- * $Id$
  */
 
 

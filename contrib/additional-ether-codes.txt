@@ -3,12 +3,6 @@ NOTE: IEEE has very extensive code list available at:
       http://standards.ieee.org/regauth/oui/
 
 
-$Revision$
-$Date$
-$Author$
-$Id$
-
-
 0000E1  Hitachi Wavelan
 000102  3Com (PCI cards)
 0001E6  Hewlett-Packard
