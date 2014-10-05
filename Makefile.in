@@ -88,13 +88,12 @@ SQL_MISC =      sql/DEFAULTS.sql sql/misc.sql sql/copy_tables.sql \
 		sql/dbconvert_1.2to1.3 sql/dbconvert_1.3to1.4
 
 
-PROGS = sauron addgroup adduser deluser delgroup modhosts \
-	import import-ethers import-jyu import-roots \
-	last moduser runsql status update-dhcp-info \
-	export-networks generatehosts addhosts check-pending \
-	expire-hosts createtables import-zone remove-hosts \
-	update-hosts export-vmps import-nets import-dhcp \
-	export-ip-list export-hosts export-by-group keygen
+PROGS = addgroup addhosts adduser check-pending createtables delgroup \
+	deluser expire-hosts export-by-group export-hosts export-ip-list \
+	export-networks export-vmps generatehosts import import-dhcp \
+	import-ethers import-jyu import-nets import-roots import-zone \
+	keygen last moduser modhosts remove-hosts runsql sauron \
+	status update-dhcp-info	update-hosts
 
 MODULES = Sauron/Util.pm Sauron/BackEnd.pm Sauron/CGIutil.pm \
 	  Sauron/UtilZone.pm Sauron/Sauron.pm Sauron/UtilDhcp.pm \
