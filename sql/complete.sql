@@ -207,7 +207,6 @@ DROP SEQUENCE public.dhcp_entries_id_seq;
 DROP SEQUENCE public.dhcp_entries6_id_seq;
 DROP TABLE public.dhcp_entries6;
 DROP TABLE public.dhcp_entries;
-DROP TABLE public.deleted_hosts;
 DROP SEQUENCE public.cidr_entries_id_seq;
 DROP TABLE public.cidr_entries;
 DROP SEQUENCE public.arec_entries_id_seq;
@@ -406,57 +405,6 @@ ALTER TABLE public.cidr_entries_id_seq OWNER TO sauron;
 
 ALTER SEQUENCE cidr_entries_id_seq OWNED BY cidr_entries.id;
 
-
---
--- Name: deleted_hosts; Type: TABLE; Schema: public; Owner: sauron; Tablespace: 
---
-
-CREATE TABLE deleted_hosts (
-    cdate integer,
-    cuser character(8),
-    mdate integer,
-    muser character(8),
-    expiration integer,
-    id integer,
-    zone integer,
-    type integer,
-    domain text,
-    ttl integer,
-    class character(2),
-    grp integer,
-    alias integer,
-    cname_txt text,
-    hinfo_hw text,
-    hinfo_sw text,
-    loc text,
-    wks integer,
-    mx integer,
-    rp_mbox text,
-    rp_txt text,
-    router integer,
-    prn boolean,
-    flags integer,
-    ether character(12),
-    ether_alias integer,
-    dhcp_date integer,
-    dhcp_last integer,
-    dhcp_info text,
-    info text,
-    location text,
-    dept text,
-    huser text,
-    email text,
-    model text,
-    serial text,
-    misc text,
-    asset_id text,
-    vmps integer,
-    comment text,
-    duid character varying(40)
-);
-
-
-ALTER TABLE public.deleted_hosts OWNER TO sauron;
 
 --
 -- Name: dhcp_entries; Type: TABLE; Schema: public; Owner: sauron; Tablespace: 

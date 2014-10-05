@@ -4,7 +4,6 @@
 ALTER TABLE hosts ADD COLUMN duid character varying(40);
 ALTER TABLE hosts ADD COLUMN iaid bigint;
 
-ALTER TABLE deleted_hosts ADD COLUMN duid character varying(40);
 ALTER TABLE leases ADD COLUMN duid character varying(40);
 ALTER TABLE zones ADD COLUMN transfer_source_v6 inet;
 

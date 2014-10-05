@@ -960,52 +960,6 @@ CREATE SEQUENCE sid_seq
 
 
 --
--- TOC entry 92 (OID 601808)
--- Name: deleted_hosts; Type: TABLE; Schema: public; Owner: tjko
---
-
-CREATE TABLE deleted_hosts (
-    cdate integer,
-    cuser character(8),
-    mdate integer,
-    muser character(8),
-    expiration integer,
-    id integer,
-    "zone" integer,
-    "type" integer,
-    "domain" text,
-    ttl integer,
-    "class" character(2),
-    grp integer,
-    alias integer,
-    cname_txt text,
-    hinfo_hw text,
-    hinfo_sw text,
-    loc text,
-    wks integer,
-    mx integer,
-    rp_mbox text,
-    rp_txt text,
-    router integer,
-    prn boolean,
-    flags integer,
-    ether character(12),
-    ether_alias integer,
-    dhcp_date integer,
-    dhcp_info text,
-    info text,
-    "location" text,
-    dept text,
-    huser text,
-    model text,
-    serial text,
-    misc text,
-    asset_id text,
-    "comment" text
-);
-
-
---
 -- TOC entry 93 (OID 601815)
 -- Name: vmps; Type: TABLE; Schema: public; Owner: tjko
 --
@@ -2658,14 +2612,6 @@ COPY vlans (cdate, cuser, mdate, muser, expiration, id, server, name, descriptio
 1041846536	admin   	\N	unknown 	\N	6	1	research	research nets	\N	\N
 \.
 
-
---
--- Data for TOC entry 202 (OID 601808)
--- Name: deleted_hosts; Type: TABLE DATA; Schema: public; Owner: tjko
---
-
-COPY deleted_hosts (cdate, cuser, mdate, muser, expiration, id, "zone", "type", "domain", ttl, "class", grp, alias, cname_txt, hinfo_hw, hinfo_sw, loc, wks, mx, rp_mbox, rp_txt, router, prn, flags, ether, ether_alias, dhcp_date, dhcp_info, info, "location", dept, huser, model, serial, misc, asset_id, "comment") FROM stdin;
-\.
 
 
 --
