@@ -1,7 +1,7 @@
 # sample.pm -- sample sauron CGI interface plugin
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
+# $Id:$
 #
 
 package Sauron::Plugins::sample;
@@ -16,7 +16,7 @@ use Sauron::CGI::Utils;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -61,8 +61,8 @@ sub menu_handler {
 	     "WHERE s.id=z.server AND z.id=h.zone AND h.id=a.host " .
 	     "GROUP BY s.name",\@data);
 
-    print h4("A records by server"),
-          "<table border=1>",Tr(th("Server"),th("A records"));
+    print h4("A/AAAA records by server"),
+          "<table border=1>",Tr(th("Server"),th("A/AAAA records"));
     for $i (0..$#data) { print Tr(td($data[$i][0]),td($data[$i][1])); }
     print "</table>";
   }

@@ -1,7 +1,7 @@
 # Sauron::CGI::Hosts.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2005.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::Hosts;
 require Exporter;
@@ -16,7 +16,7 @@ use Sauron::CGI::Utils;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -31,15 +31,16 @@ my %host_form = (
   {ftype=>0, name=>'Host' },
   {ftype=>1, tag=>'domain', name=>'Hostname', type=>'domain',
    conv=>'L', len=>64, iff=>['type','([^82]|101)']},
+  {ftype=>4, tag=>'fqdn', name=>'Fully Qualified Domain Name'}, # ****
   {ftype=>1, tag=>'domain', name=>'Hostname (delegation)', type=>'zonename',
    len=>64,conv=>'L', iff=>['type','[2]']},
   {ftype=>1, tag=>'domain', name=>'Hostname (SRV)', type=>'srvname', len=>64,
    conv=>'L', iff=>['type','[8]']},
-  {ftype=>5, tag=>'ip', name=>'IP address', iff=>['type','([169]|101)']},
+  {ftype=>5, tag=>'ip', name=>'IP address', iff=>['type','([169]|101)'], subnetlist=>1}, # ****
   {ftype=>9, tag=>'alias_d', name=>'Alias for', idtag=>'alias',
    iff=>['type','4'], iff2=>['alias','\d+']},
   {ftype=>1, tag=>'cname_txt', name=>'Static alias for', type=>'domain',
-   len=>60, iff=>['type','4'], iff2=>['alias','-1']},
+   len=>64, maxlen=>254, iff=>['type','4'], iff2=>['alias','-1']},
   {ftype=>8, tag=>'alias_a', name=>'Alias for host(s)', fields=>3,
    arec=>1, iff=>['type','7']},
   {ftype=>4, tag=>'id', name=>'Host ID'},
@@ -68,7 +69,8 @@ my %host_form = (
   {ftype=>101, tag=>'hinfo_sw', name=>'HINFO software', type=>'hinfo',len=>25,
    sql=>"SELECT hinfo FROM hinfo_templates WHERE type=1 ORDER BY pri,hinfo;",
    addempty=>$hinfo_addempty_mode, empty=>1, iff=>['type','[19]']},
-  {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+# {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+  {ftype=>1, tag=>'ether', name=>'MAC address', type=>'mac', len=>17,
    conv=>'U', iff=>['type','([19]|101)'], empty=>1},
   {ftype=>4, tag=>'card_info', name=>'Card manufacturer',
    iff=>['type','[19]']},
@@ -138,10 +140,11 @@ my %restricted_host_form = (
   {ftype=>0, name=>'Host (restricted edit)' },
   {ftype=>1, tag=>'domain', name=>'Hostname', type=>'domain',
    conv=>'L', len=>64},
+  {ftype=>4, tag=>'fqdn', name=>'Fully Qualified Domain Name'}, # ****
   {ftype=>5, tag=>'ip', name=>'IP address', restricted_mode=>1,
    iff=>['type','([16]|101)']},
   {ftype=>1, tag=>'cname_txt', name=>'Static alias for', type=>'domain',
-   len=>64, iff=>['type','4'], iff2=>['alias','-1']},
+   len=>64, maxlen=>254, iff=>['type','4'], iff2=>['alias','-1']},
   {ftype=>4, tag=>'id', name=>'Host ID'},
   {ftype=>4, tag=>'type', name=>'Type', type=>'enum', enum=>\%host_types},
   {ftype=>1, tag=>'huser', name=>'User', type=>'text', len=>40, maxlen=>80,
@@ -162,10 +165,12 @@ my %restricted_host_form = (
   {ftype=>101, tag=>'hinfo_sw', name=>'HINFO software', type=>'hinfo',len=>25,
    sql=>"SELECT hinfo FROM hinfo_templates WHERE type=1 ORDER BY pri,hinfo;",
    addempty=>$hinfo_addempty_mode, empty=>1, iff=>['type','[19]']},
-  {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+# {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+  {ftype=>1, tag=>'ether', name=>'MAC address', type=>'mac', len=>17,
    conv=>'U', iff=>['type','[19]'], iff2=>['ether_alias_info',''],
    empty=>$main::SAURON_RHF{ether}},
-  {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+# {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+  {ftype=>1, tag=>'ether', name=>'MAC address', type=>'mac', len=>17,
    conv=>'U', iff=>['type','101'], iff2=>['ether_alias_info',''], empty=>1},
   {ftype=>4, tag=>'ether_alias_info', name=>'Ethernet alias',
    iff=>['type','1']},
@@ -208,16 +213,19 @@ my %new_host_form = (
    conv=>'L', iff=>['type','[8]']},
   {ftype=>1, tag=>'domain', name=>'Hostname (delegation)',
    type=>'zonename', len=>64, conv=>'L', iff=>['type','[2]']},
-  {ftype=>1, tag=>'cname_txt', name=>'Alias for', type=>'fqdn', len=>60,
-   iff=>['type','4'],maxlen=>64},
-  {ftype=>3, tag=>'net', name=>'Subnet', type=>'enum',
+  {ftype=>1, tag=>'cname_txt', name=>'Alias for', type=>'fqdn', len=>64,
+   iff=>['type','4'],maxlen=>254},
+  {ftype=>3, tag=>'net', name=>'Subnet', type=>'enum', preselectnet=>1,
    enum=>\%new_host_nets,elist=>\@new_host_netsl, iff=>['type','(1|101)']},
-  {ftype=>1, tag=>'ip',
-   name=>'IP<FONT size=-1>(only if "Manual IP" selected from above)</FONT>',
-   type=>'ip', len=>15, empty=>1, iff=>['type','(1|101)']},
+# Length of address field 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'ip', macnotify=>1,
+   name=>'IP <FONT size=-1>(only if "Manual IP" selected from above)</FONT>',
+   type=>'ip', len=>39, empty=>1, iff=>['type','(1|101)']},
+# Length of address field 15 -> 39 for IPv6.
   {ftype=>1, tag=>'ip', name=>'IP',
-   type=>'ip', len=>15, empty=>1, iff=>['type','9']},
-  {ftype=>1, tag=>'glue',name=>'IP',type=>'ip', len=>15, iff=>['type','6']},
+   type=>'ip', len=>39, empty=>1, iff=>['type','9']},
+# Length of address field 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'glue',name=>'IP',type=>'ip', len=>39, iff=>['type','6']},
   {ftype=>2, tag=>'mx_l', name=>'Mail exchanges (MX)',
    type=>['priority','mx','text'], fields=>3, len=>[5,30,20], empty=>[0,0,1],
    elabels=>['Priority','MX','comment'], iff=>['type','3']},
@@ -253,7 +261,8 @@ my %new_host_form = (
   {ftype=>101, tag=>'hinfo_sw', name=>'HINFO software', type=>'hinfo',len=>20,
    sql=>"SELECT hinfo FROM hinfo_templates WHERE type=1 ORDER BY pri,hinfo;",
    addempty=>$hinfo_addempty_mode, empty=>1, iff=>['type','1']},
-  {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+# {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+  {ftype=>1, tag=>'ether', name=>'MAC address', type=>'mac', len=>17,
    conv=>'U', iff=>['type','(1|9|101)'], empty=>1},
 
   {ftype=>1, tag=>'asset_id', name=>'Asset ID', type=>'text', len=>20,
@@ -285,15 +294,18 @@ my %restricted_new_host_form = (
   {ftype=>1, tag=>'domain', name=>'Hostname', type=>'domain', len=>64,
    conv=>'L'},
   {ftype=>1, tag=>'cname_txt', name=>'Alias for', type=>'fqdn', len=>64,
-   iff=>['type','4']},
-  {ftype=>3, tag=>'net', name=>'Subnet', type=>'enum',
+   maxlen=>254, iff=>['type','4']},
+  {ftype=>3, tag=>'net', name=>'Subnet', type=>'enum', preselectnet=>1,
    enum=>\%new_host_nets,elist=>\@new_host_netsl,iff=>['type','1']},
-  {ftype=>1, tag=>'ip', 
-   name=>'IP<FONT size=-1>(only if "Manual IP" selected from above)</FONT>', 
-   type=>'ip', len=>15, empty=>1, iff=>['type','1']},
+# Length of address field 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'ip',  macnotify=>1,
+   name=>'IP <FONT size=-1>(only if "Manual IP" selected from above)</FONT>', 
+   type=>'ip', len=>39, empty=>1, iff=>['type','1']},
+# Length of address field 15 -> 39 for IPv6.
   {ftype=>1, tag=>'ip', name=>'IP', 
-   type=>'ip', len=>15, empty=>1, iff=>['type','9']},
-  {ftype=>1, tag=>'glue',name=>'IP',type=>'ip', len=>15, iff=>['type','6']},
+   type=>'ip', len=>39, empty=>1, iff=>['type','9']},
+# Length of address field 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'glue', name=>'IP', type=>'ip', len=>39, iff=>['type','6']},
   {ftype=>2, tag=>'mx_l', name=>'Mail exchanges (MX)',
    type=>['priority','mx','text'], fields=>3, len=>[5,30,20], empty=>[0,0,1],
    elabels=>['Priority','MX','comment'], iff=>['type','3']},
@@ -327,7 +339,8 @@ my %restricted_new_host_form = (
   {ftype=>101, tag=>'hinfo_sw', name=>'HINFO software', type=>'hinfo',len=>20,
    sql=>"SELECT hinfo FROM hinfo_templates WHERE type=1 ORDER BY pri,hinfo;",
    addempty=>$hinfo_addempty_mode, empty=>0, iff=>['type','1']},
-  {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+# {ftype=>1, tag=>'ether', name=>'Ethernet address', type=>'mac', len=>17,
+  {ftype=>1, tag=>'ether', name=>'MAC address', type=>'mac', len=>17,
    conv=>'U', iff=>['type','[19]'], empty=>$main::SAURON_RHF{ether}},
 
   {ftype=>1, tag=>'asset_id', name=>'Asset ID', type=>'text', len=>20,
@@ -383,10 +396,12 @@ my %browse_hosts_form=(
   {ftype=>10, tag=>'grp', name=>'Group' },
   {ftype=>3, tag=>'net', name=>'Subnet', type=>'list', listkeys=>'nets_k',
    list=>'nets'},
+# Length of address field 20 -> 43 for IPv6.
   {ftype=>1, tag=>'cidr', name=>'CIDR (block) or IP', type=>'cidr',
-   len=>20, empty=>1},
+   len=>43, empty=>1},
   {ftype=>1, tag=>'domain', name=>'Domain pattern (regexp)', type=>'text',
-   len=>40, empty=>1},
+#  len=>40, empty=>1},
+   len=>40, empty=>1, anydomain=>1},
   {ftype=>0, name=>'Options' },
   {ftype=>3, tag=>'order', name=>'Sort order', type=>'enum',
    enum=>{1=>'by hostname',2=>'by IP'}},
@@ -426,9 +441,16 @@ sub make_net_list($$$$$$) {
   my($id,$flag,$h,$l,$pcheck,$perms) = @_;
   my($i,$nets,$pc);
 
+# $id = serverid
+# $flag = 1 = Include <Any Net> in result
+# $h = hash for cidrs and names with cidr as key (result)
+# $l = array for cidrs (result)
+# $pcheck = 1 = Exclude nets for which user has no permission
+# $perms = hash of user's permissions
 
   $pcheck=0 if (keys %{$perms->{net}} < 1);
 
+# Get array of cidrs, ids and names.
   $nets=get_net_list($id,1,$perms->{alevel});
   undef %{$h}; undef @{$l};
 
@@ -436,7 +458,7 @@ sub make_net_list($$$$$$) {
     $h->{'ANY'}='<Any net>';
     $$l[0]='ANY';
   }
-  for $i (0..$#{$nets}) { 
+  for my $i (0..$#{$nets}) { 
     next unless ($$nets[$i][2]);
     next if ($pcheck && !($perms->{net}->{$$nets[$i][1]})); 
     $h->{$$nets[$i][0]}="$$nets[$i][0] - " . substr($$nets[$i][2],0,25);
@@ -563,12 +585,12 @@ sub menu_handler {
   elsif ($sub eq 'Move') {
     return unless ($id > 0);
     goto show_host_record if (check_perms('host',$host{domain}));
-
-    if ($#{$host{ip}} > 1) {
-      alert2("Host has multiple IPs!");
-      print  p,"Move of hosts with multiple IPs not supported (yet)";
-      return;
-    }
+# These moves are now supported.
+#   if ($#{$host{ip}} > 1) {
+#    alert2("Host has multiple IPs!");
+#     print  p,"Move of hosts with multiple IPs not supported (yet)";
+#     return;
+#   }
     if (param('move_cancel')) {
       print h2("Host record not moved");
       goto show_host_record;
@@ -581,18 +603,34 @@ sub menu_handler {
 	} elsif (check_perms('ip',param('new_ip'),1)) {
 	  alert1('Invalid IP number: outside allowed range(s)');
 	} else {
-	  my $old_ip=$host{ip}[1][1];
-	  $host{ip}[1][1]=param('new_ip');
-	  $host{ip}[1][4]=1;
-	  $host{huser}=param('new_user') unless (param('new_user') =~ /^\s*$/);
-	  $host{dept}=param('new_dept') unless (param('new_dept') =~ /^\s*$/);
-	  $host{location}=param('new_loc')
-	    unless (param('new_loc') =~ /^\s*$/);
-	  $host{info}=param('new_info') unless (param('new_info') =~ /^\s*$/);
-	  unless (($res=update_host(\%host)) < 0) {
+# Old code.
+#	    my $old_ip=$host{ip}[1][1];
+#	    $host{ip}[1][1]=param('new_ip');
+#	    $host{ip}[1][4]=1;
+# Support for moving hosts with multiple IPs, one IP at a time.
+# The selected IP will be replaced. TVu
+	    my $old_ip = param('select_ip');
+	    my $ind2;
+	    for my $ind1 (1..$#{$host{ip}}) {
+		if ($old_ip eq $host{ip}[$ind1][1]) { $ind2 = $ind1; last; }
+	    }
+	    if (!$ind2) {
+		alert2("Someone has changed the IP that you were trying to change!");
+		return;
+	    }
+	    $host{ip}[$ind2][1] = param('new_ip');
+	    $host{ip}[$ind2][4] = 1;
+# End of new code.
+	    $host{huser}=param('new_user') unless (param('new_user') =~ /^\s*$/);
+	    $host{dept}=param('new_dept') unless (param('new_dept') =~ /^\s*$/);
+	    $host{location}=param('new_loc')
+		unless (param('new_loc') =~ /^\s*$/);
+	    $host{info}=param('new_info') unless (param('new_info') =~ /^\s*$/);
+	    unless (($res=update_host(\%host)) < 0) {
 	    update_history($state->{uid},$state->{sid},1,
 			   "MOVE: $host_types{$host{type}} ",
-		   "domain: $host{domain}, IP: $old_ip --> $host{ip}[1][1]",
+#		   "domain: $host{domain}, IP: $old_ip --> $host{ip}[1][1]",
+		   "domain: $host{domain}, IP: $old_ip --> $host{ip}[$ind2][1]",
 			  $host{id});
 	    print h2('Host moved.');
 	    goto show_host_record;
@@ -602,19 +640,27 @@ sub menu_handler {
 	}
       }
       print h2("Move host to another IP");
-      my $tmpnet=new Net::Netmask(param('move_net'));
-      $newip=auto_address($serverid,$tmpnet->desc());
+#     my $tmpnet=new Net::Netmask(param('move_net'));
+#     $newip=auto_address($serverid,$tmpnet->desc());
+      my $tmpnet=new NetAddr::IP(param('move_net')); # For IPv6.
+      $newip=auto_address($serverid,$tmpnet->cidr()); # For IPv6.
       unless(is_cidr($newip)) {
 	logmsg("notice","auto_address($serverid,".param('move_net').
 	       ") failed!");
 	print h3($newip);
-	$newip=$host{ip}[1][1];
+# Support for moving hosts with multiple IPs.
+#	$newip=$host{ip}[1][1];
+	$newip = param('select_ip');
       }
       print p,startform(-method=>'GET',-action=>$selfurl),
             hidden('menu','hosts'),hidden('h_id',$id),hidden('sub','Move'),
+            hidden('select_ip', param('select_ip')),
             hidden('move_confirm'),hidden('move_net'),p,"<TABLE>",
+# Support for moving hosts with multiple IPs.
+	    Tr(td("Current IP:"),
+	       td(param('select_ip'))),
 	    Tr(td("New IP:"),
-	       td(textfield(-name=>'new_ip',-size=>15, -maxlength=>15,
+	       td(textfield(-name=>'new_ip',-size=>40, -maxlength=>39, # 15 -> 40/39 for IPv6.
 			    -default=>$newip))),
 	    Tr(td("New User:"),
 	       td(textfield(-name=>'new_user',-size=>40,-maxlength=>40,
@@ -648,7 +694,7 @@ sub menu_handler {
 	    alert1("Not authorized to move hosts to this zone");
 	}
 	elsif (chk_perms(\%mystate,'host',$host{domain},1)) {
-	   alert1("Not authorized to move host in target zone with that name");
+	   alert1("Not authorized to move host to target zone with that name");
 	}
 	elsif (get_zone($newzoneid,\%newzone) < 0) {
 	    alert1("Cannot get zone record (id=$newzoneid)");
@@ -682,13 +728,16 @@ sub menu_handler {
     make_net_list($serverid,0,\%nethash,\@netkeys,1,$perms);
     my(%zonehash,@zonelist);
     get_zone_list2($serverid,\%zonehash,\@zonelist);
-    $ip=$host{ip}[1][1];
+# Support for moving hosts with multiple IPs.
+#   $ip=$host{ip}[1][1];
+    $ip = param('select_ip');
     undef @q;
     db_query("SELECT net FROM nets WHERE server=$serverid AND subnet=true " .
 	     "AND net >> '$ip';",\@q);
     print h2("Move host to another subnet or zone: ");
     print p,startform(-method=>'GET',-action=>$selfurl),
           hidden('menu','hosts'),hidden('h_id',$id),
+          hidden('select_ip', param('select_ip')),
           hidden('sub','Move'),
           "Move host to: <TABLE><TR><TD>",
           popup_menu(-name=>'move_net',-values=>\@netkeys,
@@ -737,6 +786,7 @@ sub menu_handler {
 	      }
 	      if (($old_ips[$i] ne $host{ip}[$i][1]) &&
 		  ip_in_use($serverid,$host{ip}[$i][1])) {
+# **		  alert2(ip_in_use($serverid,$host{ip}[$i][1]));
 		alert2("IP number already in use: $host{ip}[$i][1]");
 		$update_ok=0;
 		$update_ok=1 
@@ -795,6 +845,12 @@ sub menu_handler {
 
     print h2("Edit host:"),p,startform(-method=>'POST',-action=>$selfurl),
 	  hidden('menu','hosts'),hidden('sub','Edit');
+    $host{hostid} = $host{id};
+    $host{perms} = $perms;
+    my %fqdnzone; # ****
+    if (get_zone($host{zone}, \%fqdnzone) == 0) {
+	$host{fqdn} = $host{domain} . '.' . $fqdnzone{name};
+    }
     form_magic('h',\%host,$hform);
     print submit(-name=>'h_submit',-value=>'Apply')," ",
           submit(-name=>'h_cancel',-value=>'Cancel'),end_form;
@@ -802,17 +858,28 @@ sub menu_handler {
   }
   elsif ($sub eq 'Network Settings') {
     goto show_host_record unless ($id > 0 && $host{type} == 1);
-    get_host_network_settings($serverid,$host{ip}[1][1],\%data);
+#   get_host_network_settings($serverid,$host{ip}[1][1],\%data);
     print "Current network settings for: $host{domain}<p>";
-    display_form(\%data,\%host_net_info_form);
-    print "<br><hr noshade><br>";
+#   display_form(\%data,\%host_net_info_form);
+# Show network settings for all IP addresses that the host has, not just
+# the first one. Unrelated to IPv6, but probably useful with it.
+    for my $ind1 (1..$#{$host{ip}}) {
+        undef %data;
+        get_host_network_settings($serverid,$host{ip}[$ind1][1],\%data);
+        display_form(\%data,\%host_net_info_form);
+        print "<br>";
+    }
+    print "<hr noshade><br>";
     goto show_host_record;
   }
   elsif ($sub eq 'Ping') {
     return if check_perms('level',$main::ALEVEL_PING);
     goto show_host_record unless ($id > 0 && $host{type} == 1);
     if ($main::SAURON_PING_PROG && -x $main::SAURON_PING_PROG) {
-      ($ip=$host{ip}[1][1]) =~ s/\/32\s*$//;
+# Selected IP address instead of the first one only.
+#     ($ip=$host{ip}[1][1]) =~ s/\/32\s*$//;
+      ($ip=param('select_ip')) =~ s/\/32\s*$//;
+      $ip =~ s/\/128\s*$//; # For IPv6.
       if (is_cidr($ip)) {
 	update_history($state->{uid},$state->{sid},1,
 		       "PING","domain: $host{domain}, ip: $ip",$host{id});
@@ -836,7 +903,10 @@ sub menu_handler {
     return if check_perms('level',$main::ALEVEL_TRACEROUTE);
     goto show_host_record unless ($id > 0 && $host{type} == 1);
     if ($main::SAURON_TRACEROUTE_PROG && -x $main::SAURON_TRACEROUTE_PROG) {
-      ($ip=$host{ip}[1][1]) =~ s/\/32\s*$//;
+# Selected IP address instead of the first one only.
+#     ($ip=$host{ip}[1][1]) =~ s/\/32\s*$//;
+      ($ip=param('select_ip')) =~ s/\/32\s*$//;
+      $ip =~ s/\/128\s*$//; # For IPv6.
       if (is_cidr($ip)) {
 	update_history($state->{uid},$state->{sid},1,
 		      "TRACEROUTE","domain: $host{domain}, ip: $ip",$host{id});
@@ -868,8 +938,10 @@ sub menu_handler {
     unshift @q, [$host{cdate},'CREATE','record created',$host{cuser}];
     display_list(['Date','Action','Info','By'],\@q,0);
   }
-  elsif ($sub eq '-> This Subnet') {
-    if (is_cidr(($ip=$host{ip}[1][1]))) {
+  elsif ($sub eq 'This Subnet') {
+# Selected IP address instead of the first one only.
+#   if (is_cidr(($ip=$host{ip}[1][1]))) {
+    if (is_cidr(($ip=param('select_ip')))) {
       db_query("SELECT net FROM nets " .
 	       "WHERE server=$serverid AND '$ip' << net " .
 	       "ORDER BY subnet,net",\@q);
@@ -897,6 +969,7 @@ sub menu_handler {
 	param('bh_net','');
 	param('bh_cidr','');
 	param('bh_domain','');
+	param('bh_domain_anydom','');
 
 	param('bh_order','2');
 	param('bh_size','3');
@@ -911,14 +984,15 @@ sub menu_handler {
                    param('bh_size').",".param('bh_stype').",".
 		   param('bh_sdtype').",".param('bh_net').",".
                    param('bh_cidr').",".param('bh_dates').",".
-		   param('bh_grp');
+#		   param('bh_grp');
+		   param('bh_grp').",".param('bh_domain_anydom');
       $state->{searchdomain}=param('bh_domain');
       $state->{searchpattern}=param('bh_pattern');
       save_state($state->{cookie},$state);
     }
     elsif (param('lastsearch')) {
       if ($state->{searchopts} =~
-	  /^(\d+),(\d+),(\d+),(-?\d+),(\d+),(\S*),(\S*),(\S*),(-?\d+)$/) {
+	  /^(\d+),(\d+),(\d+),(-?\d+),(\d+),(\S*),(\S*),(\S*),(-?\d+),(\S*)$/) {
 	param('bh_type',$1);
 	param('bh_order',$2) unless (param('bh_order'));
 	param('bh_size',$3);
@@ -928,6 +1002,7 @@ sub menu_handler {
 	param('bh_cidr',$7) if ($7);
 	param('bh_dates',$8) if ($8);
 	param('bh_grp',$9);
+	param('bh_domain_anydom',$10);
       } else {
 	print h2('No previous search found');
 	goto browse_hosts;
@@ -964,7 +1039,13 @@ sub menu_handler {
     }
     my $grouprule;
     if (param('bh_grp') > 0) {
-	$grouprule=" AND a.grp = " . db_encode_str(param('bh_grp')) . "  ";
+#	$grouprule=" AND a.grp = " . db_encode_str(param('bh_grp')) . "  ";
+# Includes also hosts whose any subgroup matches the selected group. TVu
+	$grouprule = ' and a.id in (select h.id from hosts h where h.grp = ' .
+	    db_encode_str(param('bh_grp')) .
+	    ' union select h.id from hosts h, group_entries ge where ge.grp = ' .
+	    db_encode_str(param('bh_grp')) .
+	    ' and ge.host = h.id)';
     }
 
     my $sorder;
@@ -985,7 +1066,8 @@ sub menu_handler {
       if ($tmp eq 'ether') {
 	$tmp2 = "\U$tmp2";
 	$tmp2 =~ s/[^0-9A-F]//g;
-	print "Searching for Ethernet address pattern '$tmp2'<br><br>"
+#	print "Searching for Ethernet address pattern '$tmp2'<br><br>"
+	print "Searching for MAC address pattern '$tmp2'<br><br>"
 	  if (param('bh_pattern') =~ /[^A-Fa-f0-9:\-\ ]/);
 	#print "<br>ether=$tmp2";
       }
@@ -1019,9 +1101,38 @@ sub menu_handler {
       #print "extrarule2='$extrarule2'<br>";
     }
 
+#    if ($main::SAURON_PRIVILEGE_MODE==1) {
+#      next unless ( $perms->{zone}->{$id} =~ /R/ ||
+#		    !check_perms('superuser','',1) );
+#    }
+
+# If user didn't select "Any domain", use current domain only.
+# If user selected "Any domain", show hosts in any domain the user has read privileges to, unless
+# she is a superuser or restrictions are not used, in which case show hosts in all domains.
+    my $zonerule = 'TRUE';
+    my $combrule1 = 'a.domain';
+    my $combrule2 = 'join zones z on a.zone = z.id';
+    my $combrule3 = ', zones z';
+    my $combrule4 = 'and a.zone = z.id';
+    my $serverrule = "and z.server = $serverid";
+    if (param('bh_domain_anydom') eq 'on') {
+	if ($main::SAURON_PRIVILEGE_MODE == 1 && check_perms('superuser','',1)) {
+	    $zonerule = "a.zone in (select ur.rref from user_rights ur, zones z " .
+		"where ur.ref = $state->{uid} and ur.type = 2 and ur.rtype = 2 " .
+		"and ur.rule ~ 'R' and ur.rref = z.id and z.server = $serverid union " .
+		"select ur2.rref from user_rights ur1, user_groups ug, user_rights ur2, zones z " .
+		"where ur1.ref = $state->{uid} and ur1.type = 2 and ur1.rtype = 0 " .
+		"and ur1.rref = ug.id and ug.id = ur2.ref and ur2.type = 1 and ur2.rtype = 2" .
+		" and ur2.rule ~ 'R' and ur2.rref = z.id and z.server = $serverid)";
+	}
+	$combrule1 = "a.domain || '.' || z.name";
+    } else {
+	$zonerule = "a.zone = $zoneid";
+    }
 
     undef @q;
-    my $fields="a.id,a.type,a.domain,a.ether,a.info,a.huser,a.dept," .
+#   my $fields="a.id,a.type,a.domain,a.ether,a.info,a.huser,a.dept," .
+    my $fields="a.id,a.type,$combrule1,a.ether,a.info,a.huser,a.dept," . # ****
 	    "a.location,a.expiration,a.ether_alias";
     $fields.=",a.cdate,a.mdate,a.expiration,a.dhcp_date," .
              "a.hinfo_hw,a.hinfo_sw,a.model,a.serial,a.misc,a.asset_id"
@@ -1029,15 +1140,23 @@ sub menu_handler {
 
     my $sql;
     my $sql1="SELECT b.ip,'',$fields " .
-             "FROM hosts a LEFT JOIN a_entries b ON b.host=a.id " .
-	     "WHERE a.zone=$zoneid  $typerule $typerule2 " .
+#            "FROM hosts a LEFT JOIN a_entries b ON b.host=a.id " .
+             "FROM hosts a $combrule2 LEFT JOIN a_entries b ON b.host=a.id " . # ****
+#	     "WHERE a.zone=$zoneid  $typerule $typerule2 " .
+	     "WHERE $zonerule $serverrule $typerule $typerule2 " . # ****
 	     " $netrule $domainrule $grouprule $extrarule $extrarule2 ";
-    my $sql2="SELECT '0.0.0.0'::cidr,b.domain,$fields FROM hosts a,hosts b " .
-             "WHERE a.zone=$zoneid AND a.alias=b.id AND a.type=4 " .
-	     " $domainrule  ";
-    my $sql3="SELECT '0.0.0.0'::cidr,a.cname_txt,$fields FROM hosts a  " .
-             "WHERE a.zone=$zoneid AND a.alias=-1 AND a.type=4 " .
-	     " $domainrule ";
+#   my $sql2="SELECT '0.0.0.0'::cidr,b.domain,$fields FROM hosts a,hosts b " .
+#   my $sql2="SELECT '$main::SAURON_ZERO_IP'::cidr,b.domain,$fields FROM hosts a,hosts b " . # For IPv6.
+    my $sql2="SELECT '$main::SAURON_ZERO_IP'::cidr,b.domain,$fields FROM hosts a,hosts b$combrule3 " . # ****
+#            "WHERE a.zone=$zoneid AND a.alias=b.id AND a.type=4 " .
+	     "WHERE $zonerule $serverrule and a.alias=b.id AND a.type=4 " . # ****
+	     " $domainrule $combrule4 ";
+#   my $sql3="SELECT '0.0.0.0'::cidr,a.cname_txt,$fields FROM hosts a  " .
+#   my $sql3="SELECT '$main::SAURON_ZERO_IP'::cidr,a.cname_txt,$fields FROM hosts a " . # For IPv6.
+    my $sql3="SELECT '$main::SAURON_ZERO_IP'::cidr,a.cname_txt,$fields FROM hosts a$combrule3 " . # ****
+#            "WHERE a.zone=$zoneid AND a.alias=-1 AND a.type=4 " .
+             "WHERE $zonerule $serverrule and a.alias=-1 AND a.type=4 " . # ****
+	     " $domainrule $combrule4 ";
 
     if ($type == 4) {
       $sql="$sql2 UNION $sql3 ORDER BY $sorder,2";
@@ -1089,9 +1208,18 @@ sub menu_handler {
     }
 
     print "<TABLE width=\"99%\" cellspacing=1 cellpadding=1 border=0 " .
-          "BGCOLOR=\"ffffff\">",
-          "<TR><TD><B>Zone:</B> $zone</TD>",
-          "<TD align=right>Page: ".($page+1)."</TD></TR></TABLE>";
+#         "BGCOLOR=\"ffffff\">",
+#         "<TR><TD><B>Zone:</B> $zone</TD>",
+#         "<TD align=right>Page: ".($page+1)."</TD></TR></TABLE>";
+	  "BGCOLOR=\"ffffff\"><TR>"; # ****
+    print "<TD><B>Zone:</B> $zone</TD>" unless (param('bh_domain_anydom') eq 'on'); # ****
+    if (param('bh_net') && param('bh_net') ne 'ANY') { # ****
+	my @net;
+	db_query("SELECT netname, name FROM nets " .
+		 "WHERE net = '" . param('bh_net') . "'", \@net);
+	print '<TD><B>Net:</B> ' . param('bh_net') . " &ndash; $net[0][0] &ndash; $net[0][1]<TD>";
+    }
+    print "<TD align=right>Page: ".($page+1)."</TD></TR></TABLE>"; # ****
 
     my %nmaphash;
     my $pingsweep=0;
@@ -1139,9 +1267,11 @@ sub menu_handler {
     for $i (0..$#q) {
       my($nro,$ip);
       my $type=$q[$i][3];
-      ($ip=$q[$i][0]) =~ s/\/\d{1,2}$//g;
+      ($ip=$q[$i][0]) =~ s/\/\d{1,3}$//g; # 2 -> 3 for IPv6.
       $ip="(".add_origin($q[$i][1],$zone).")" if ($type==4);
-      $ip='N/A' if ($ip eq '0.0.0.0');
+#     $ip='N/A' if ($ip eq '0.0.0.0');
+      $ip='N/A' if ($ip eq '0.0.0.0' or # For IPv6.
+		    ipv6compress(cidr64ok($ip) ? ipv64unmix($ip) : $ip) eq '::');
       my $ether=$q[$i][5];
       # $ether =~  s/^(..)(..)(..)(..)(..)(..)$/\1:\2:\3:\4:\5:\6/;
       $ether='<font color="#009900">ALIASED</font>' if ($q[$i][11] > 0);
@@ -1180,8 +1310,8 @@ sub menu_handler {
     my $params="bh_type=".param('bh_type')."&bh_order=".param('bh_order').
              "&bh_net=".param('bh_net')."&bh_cidr=".param('bh_cidr').
 	     "&bh_stype=".param('bh_stype')."&bh_pattern=".param('bh_pattern').
-	     "&bh_domain=".param('bh_domain')."&bh_size=".param('bh_size').
-	     "&bh_grp=".param('bh_grp');
+	     "&bh_domain=".param('bh_domain')."&bh_domain_anydom=".param('bh_domain_anydom'). # ****
+	     "&bh_size=".param('bh_size')."&bh_grp=".param('bh_grp');
 
     my $npage;
     if ($page > 0) {
@@ -1273,6 +1403,12 @@ sub menu_handler {
       $newhostform = \%restricted_new_host_form if ($type==1);
     }
 
+# Use default host name template, if defined.
+    if ($perms->{defhost}) { # ****
+	$data{domain} = $perms->{defhost};
+	$newhostform->{defhost} = 1;
+    }
+
     unless ($host_types{$type}) {
       alert2('Invalid add type!');
       return;
@@ -1301,12 +1437,18 @@ sub menu_handler {
       unless (($res=form_check_form('addhost',\%data,$newhostform))) {
 	if ($data{type}==1 && $data{net} ne 'MANUAL' &&
 	    not is_cidr($data{ip})) {
-	  my $tmpnet=new Net::Netmask($data{net});
-	  $ip=auto_address($serverid,$tmpnet->desc());
+#	  my $tmpnet=new Net::Netmask($data{net});
+#	  $ip=auto_address($serverid,$tmpnet->desc());
+	  my $tmpnet=new NetAddr::IP($data{net}); # For IPv6.
+#	  $ip=auto_address($serverid,$tmpnet->cidr()); # For IPv6.
+	  $ip = get_free_ip_by_net($serverid, $tmpnet->cidr(), # For IPv6. ****
+	  $data{ether}, '', get_net_ip_policy($serverid, $tmpnet->cidr()));
 	  unless (is_cidr($ip)) {
-	    logmsg("notice","auto_address($serverid,$data{net}) failed!");
-	    alert1("Cannot get free IP: $ip");
-	    return;
+#	    logmsg("notice","auto_address($serverid,$data{net}) failed!");
+	      logmsg("notice","get_free_ip_by_net($serverid, $tmpnet->cidr(),
+	      $data{ether}, '', get_net_ip_policy($serverid, $tmpnet->cidr())) failed!");
+	      alert1("Cannot get free IP: $ip");
+	      return;
 	  }
 	  $data{ip}=$ip;
 	}
@@ -1353,7 +1495,7 @@ sub menu_handler {
 	  } else {
 	    alert1("Cannot add host record!");
 	    if (db_lasterrormsg() =~ /ether_key/) {
-	      alert2("Duplicate Ethernet (MAC) address $data{ether}");
+	      alert2("Duplicate MAC (Ethernet) address $data{ether}");
 	      db_query("SELECT id,domain FROM hosts " .
 		       "WHERE ether='$data{ether}' AND zone=$zoneid",\@q);
 	      if ($q[0][0] > 0) {
@@ -1374,6 +1516,7 @@ sub menu_handler {
     print startform(-method=>'POST',-action=>$selfurl),
           hidden('menu','hosts'),hidden('sub','add'),hidden('type',$type);
     print hidden('copy_id') if (param('copy_id'));
+    $data{ip_policy} = get_net_ip_policy($serverid, param('select_ip'));
     form_magic('addhost',\%data,$newhostform);
     print submit(-name=>'addhost_submit',-value=>'Create'), " ",
           submit(-name=>'addhost_cancel',-value=>'Cancel'),end_form;
@@ -1386,7 +1529,11 @@ sub menu_handler {
     delete $data{ether};
     delete $data{serial};
     delete $data{asset_id};
-    $data{ip}=$host{ip}[1][1];
+# Selected IP address instead of the first one only.
+#   $data{ip}=$host{ip}[1][1];
+    $data{ip} = param('select_ip');
+#   $data{ip} = param('select_ip') if (param('select_ip') =~ /\./); # IPv4 only. ****
+    $data{preselectnet} = get_net_cidr_by_ip($serverid, param('select_ip'));
     $type=$host{type};
     param('copy_id',$id);
     param('sub','add');
@@ -1394,14 +1541,25 @@ sub menu_handler {
       $p1=$1; $p2=$2;
       if ($p1 =~ /(\d+)/) {
 	my $p3len=length(($p3=$1));
-	$p4 = sprintf("%0${p3len}d",$p3+1);
-	$p1 =~ s/${p3}/${p4}/;
-	$data{domain}=$p1.$p2;
+# Added checks for hostname_in_use, TVu 20.11.2012.
+	do {
+	    $p4 = sprintf("%0${p3len}d",$p3+1);
+	    $p1 =~ s/${p3}/${p4}/;
+	    $data{domain}=$p1.$p2;
+	    $p3++;
+	} while hostname_in_use($zoneid, $data{domain});
       } else {
-	$data{domain}=$p1.'2'.$p2;
+	  $p3 = 2;
+	  do {
+	      $data{domain}=$p1.$p3.$p2;
+	      $p3++;
+	  } while hostname_in_use($zoneid, $data{domain});
       }
     }
-    $data{ip}=$newip if (($newip=next_free_ip($serverid,$data{ip})));
+# New ip by network policy instead of 'next free'. This really only works for Lowest or Highest free.
+#   $data{ip}=$newip if (($newip=next_free_ip($serverid,$data{ip})));
+    $data{ip} = $newip if (is_ip($newip = get_free_ip_by_net($serverid, $data{preselectnet},
+		'', '', get_net_ip_policy($serverid, $data{preselectnet}))));
     goto copy_add_label;
   }
 
@@ -1421,7 +1579,17 @@ sub menu_handler {
           hidden('menu','hosts'),hidden('h_id',$id);
     print "<table width=\"99%\"><tr><td align=\"left\">",
           submit(-name=>'sub',-value=>'Refresh')," &nbsp; ";
-    print submit(-name=>'sub',-value=>'-> This Subnet') if ($host{type} == 1);
+    print submit(-name=>'sub',-value=>'This Subnet')," &nbsp; " if ($host{type} == 1);
+
+# This drop-down list is not strictly for IPv6, but will probably be useful with it.
+# It is used to select IP for "This subnet", "Ping", "Traceroute", "Copy" and "Move"
+# when a host has multiple IP addresses, especially both IPv4 and IPv6.
+    my @opt;
+    for my $ind1 (1..$#{$host{ip}}) {
+	push @opt, $host{ip}[$ind1][1];
+    }
+    if (@opt) { print popup_menu('select_ip', \@opt); }
+
     print "</td><td align=\"right\">";
     print submit(-name=>'sub',-value=>'History'), " "
       if (!check_perms('level',$main::ALEVEL_HISTORY,1));
@@ -1434,7 +1602,10 @@ sub menu_handler {
       if ($host{type} == 1 && $main::SAURON_TRACEROUTE_PROG &&
 	  !check_perms('level',$main::ALEVEL_TRACEROUTE,1));
     print "</td></tr></table>";
-
+    my %fqdnzone; # ****
+    if (get_zone($host{zone}, \%fqdnzone) == 0) {
+	$host{fqdn} = $host{domain} . '.' . $fqdnzone{name};
+    }
     display_form(\%host,\%host_form);
     unless (check_perms('zone','RW',1)) {
       print submit(-name=>'sub',-value=>'Edit'), " ",
@@ -1460,7 +1631,8 @@ sub menu_handler {
   %bdata=(domain=>'',net=>'ANY',nets=>\%nethash,nets_k=>\@netkeys,
 	    type=>1,order=>2,stype=>0,size=>3,sdtype=>0,grp=>-1);
   if ($state->{searchopts} =~
-      /^(\d+),(\d+),(\d+),(-?\d+),(\d+),(\S*),(\S*),(\S*),(-?\d+)$/) {
+#     /^(\d+),(\d+),(\d+),(-?\d+),(\d+),(\S*),(\S*),(\S*),(-?\d+)$/) {
+      /^(\d+),(\d+),(\d+),(-?\d+),(\d+),(\S*),(\S*),(\S*),(-?\d+),(\S*)$/) { # ****
     $bdata{type}=$1;
     $bdata{order}=$2;
     $bdata{size}=$3;
@@ -1470,6 +1642,7 @@ sub menu_handler {
     $bdata{cidr}=$7 if ($7);
     $bdata{dates}=$8 if ($8);
     $bdata{grp}=$9;
+    $bdata{bh_domain_anydom}=$10; # ****
   }
   $bdata{domain}=$state->{searchdomain} if ($state->{searchdomain});
   $bdata{pattern}=$state->{searchpattern} if ($state->{searchpattern});

@@ -9,7 +9,7 @@
 require 5;
 use Getopt::Long;
 use Time::Local;
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;

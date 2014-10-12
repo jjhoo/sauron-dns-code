@@ -69,26 +69,34 @@ foreach $host (keys %zonedata) {
   $ttl=$rec->{TTL};
   $ttl=3600000 unless ($ttl > 0);
 
+# This code now handles both IPv4 and IPv6.
   if (@{$rec->{A}}) {
     #print "A: " . join(",",@{$rec->{A}}) . "\n";
+    #print "A/AAAA: " . join(",",@{$rec->{A}}) . "\n"; # For IPv6.
     for $i (0..$#{$rec->{A}}) {
       $ip=$rec->{A}[$i];
+      $iptype = $ip =~ ':' ? 'AAAA' : 'A'; # For IPv6.
       $res=db_exec("INSERT INTO root_servers (server,ttl,domain,type,value) " .
-		   " VALUES($serverid,$ttl,'$host','A','$ip');");
-      fatal("cannot insert A record") if ($res < 0);
+#		   " VALUES($serverid,$ttl,'$host','A','$ip');");
+		   " VALUES($serverid,$ttl,'$host',$iptype,'$ip');"); # For IPv6.
+#     fatal("cannot insert A record") if ($res < 0);
+      fatal("cannot insert A/AAAA record") if ($res < 0); # For IPv6.
       $acount++;
     }
   }
-  if (@{$rec->{AAAA}}) {
-    #print "AAAA: " . join(",",@{$rec->{AAAA}}) . "\n";
-    for $i (0..$#{$rec->{AAAA}}) {
-      $ip=$rec->{AAAA}[$i];
-      $res=db_exec("INSERT INTO root_servers (server,ttl,domain,type,value) " .
-		   " VALUES($serverid,$ttl,'$host','AAAA','$ip');");
-      fatal("cannot insert AAAA record") if ($res < 0);
-      $aaaacount++;
-    }
-  }
+
+# AAAA records are handled differently after IPv6 conversion.
+#  if (@{$rec->{AAAA}}) {
+#    #print "AAAA: " . join(",",@{$rec->{AAAA}}) . "\n";
+#    for $i (0..$#{$rec->{AAAA}}) {
+#      $ip=$rec->{AAAA}[$i];
+#      $res=db_exec("INSERT INTO root_servers (server,ttl,domain,type,value) " .
+#		   " VALUES($serverid,$ttl,'$host','AAAA','$ip');");
+#      fatal("cannot insert AAAA record") if ($res < 0);
+#      $aaaacount++;
+#    }
+#  }
+
   if (@{$rec->{NS}}) {
     #print "NS: " . join(",",@{$rec->{NS}}) . "\n";
     for $i (0..$#{$rec->{NS}}) {
@@ -99,11 +107,12 @@ foreach $host (keys %zonedata) {
       $ncount++;
     }
   }
+
 }
 
 
 if ($acount < 1) {
-  print STDERR "No A records found, insert failed!\n";
+  print STDERR "No A/AAAA records found, insert failed!\n";
   exit(1);
 }
 

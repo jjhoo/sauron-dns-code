@@ -1,7 +1,7 @@
 # Sauron::CGI::Utils.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::Utils;
 require Exporter;
@@ -11,10 +11,11 @@ use Sauron::CGIutil;
 use Sauron::BackEnd;
 use Sauron::Util;
 use Sauron::Sauron;
+use bignum; # For IPv6.
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -42,10 +43,11 @@ our %host_types;
 %check_names_enum = (D=>'Default',W=>'Warn',F=>'Fail',I=>'Ignore');
 %yes_no_enum = (D=>'Default',Y=>'Yes', N=>'No');
 %boolean_enum = (f=>'No',t=>'Yes');
-%host_types=(0=>'Any type',1=>'Host',2=>'Delegation',3=>'Plain MX',
-	     4=>'Alias',5=>'Printer',6=>'Glue record',7=>'AREC Alias',
-	     8=>'SRV record',9=>'DHCP only',10=>'zone',
-	     101=>'Host reservation');
+#%host_types=(0=>'Any type',1=>'Host',2=>'Delegation',3=>'Plain MX',
+#	     4=>'Alias',5=>'Printer',6=>'Glue record',7=>'AREC Alias',
+#	     8=>'SRV record',9=>'DHCP only',10=>'zone',
+#	     101=>'Host reservation');
+%host_types = get_host_types();
 
 
 sub chk_perms($$$$) {
@@ -62,7 +64,7 @@ sub chk_perms($$$$) {
 
   if ($type eq 'superuser') {
     return 1 if ($quiet);
-    alert1("Access denied: administrator priviliges required.");
+    alert1("Access denied: administrator privileges required.");
     return 1;
   }
   elsif ($type eq 'level') {
@@ -175,7 +177,8 @@ sub make_cookie($$) {
   undef %state;
   $state{auth}='no';
   #$state{'host'}=remote_host();
-  $state{addr}=($remote_addr ? $remote_addr : '0.0.0.0');
+# $state{addr}=($remote_addr ? $remote_addr : '0.0.0.0');
+  $state{addr}=($remote_addr ? $remote_addr : $main::SAURON_ZERO_IP); # For IPv6.
   save_state($val,\%state);
   $$ref=$val;
   return cookie(-name=>"sauron-$main::SERVER_ID",-expires=>'+7d',

@@ -7,11 +7,12 @@
 #
 require 5;
 use Getopt::Long;
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;
 use Sauron::Sauron;
+use bignum; # For IPv6.
 
 load_config();
 
@@ -19,30 +20,40 @@ load_config();
 
 sub tag_expand($) {
   my($str) = @_;
-  my($i2,$i3,$i4,$ip1,$ip2,$ip3,$ip4);
+  my($i1,$i2,$i3,$i4,$i_ip,$ip1,$ip2,$ip3,$ip4);
 
   return '' if ($str =~ /^\s*$/);
-
-  $i1=$i+$seq_start;
-  $i2=sprintf("%02d",$i1);
-  $i3=sprintf("%03d",$i1);
-  $i4=sprintf("%04d",$i1);
 
   if ($ip =~ /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/) {
     $ip1=sprintf("%03d",$1);
     $ip2=sprintf("%03d",$2);
     $ip3=sprintf("%03d",$3);
     $ip4=sprintf("%03d",$4);
-    $str=~ s/:IP1:/$ip1/g;
-    $str=~ s/:IP2:/$ip2/g;
-    $str=~ s/:IP3:/$ip3/g;
-    $str=~ s/:IP4:/$ip4/g;
+    $str=~ s/:IP1:/$ip1/gi;
+    $str=~ s/:IP2:/$ip2/gi;
+    $str=~ s/:IP3:/$ip3/gi;
+    $str=~ s/:IP4:/$ip4/gi;
+  } else { # For IPv6.
+      $i_ip = ipv6decompress(lc($ip));
+      $str =~ s/:IP1:/substr($i_ip,  0, 4)/gei;
+      $str =~ s/:IP2:/substr($i_ip,  5, 4)/gei;
+      $str =~ s/:IP3:/substr($i_ip, 10, 4)/gei;
+      $str =~ s/:IP4:/substr($i_ip, 15, 4)/gei;
+      $str =~ s/:IP5:/substr($i_ip, 20, 4)/gei;
+      $str =~ s/:IP6:/substr($i_ip, 25, 4)/gei;
+      $str =~ s/:IP7:/substr($i_ip, 30, 4)/gei;
+      $str =~ s/:IP8:/substr($i_ip, 35, 4)/gei;
   }
 
-  $str =~ s/:N:/$i1/g;
-  $str =~ s/:N2:/$i2/g;
-  $str =~ s/:N3:/$i3/g;
-  $str =~ s/:N4:/$i4/g;
+  $i1=$i+$seq_start;
+  $i2=sprintf("%02d",$i1);
+  $i3=sprintf("%03d",$i1);
+  $i4=sprintf("%04d",$i1);
+  $str =~ s/:N:/$i1/gi;
+  $str =~ s/:N2:/$i2/gi;
+  $str =~ s/:N3:/$i3/gi;
+  $str =~ s/:N4:/$i4/gi;
+
   return $str;
 }
 
@@ -65,11 +76,10 @@ if ($opt_help || @ARGV < 5) {
 	"\t--info=<user>:<dept>:<location>:<extra>\n\n",
 	"\t--commit\t\tcommit changes (w/o this no changes are made)\n",
 	"\ntags:\n",
-	"\t:IP1:\t\tfirst octet of current IP-number\n",
-	"\t:IP2:\t\tsecond octet of current IP-number\n",
-	"\t:IP3:\t\tthird octet of current IP-number\n",
-	"\t:IP4:\t\tfourth octet of current IP-number\n",
+	"\t:IPn:\t\tfor IPv4, nth octet of current IP address; n = 1..4\n",
+	"\t:IPn:\t\tfor IPv6, nth quartet of current IP address; n = 1..8\n",
 	"\t:N:\t\tsequence number\n",
+	"\t:Nn:\t\tn-digit sequence number, left padded with zeros; n = 2..4\n",
 	"\n";
   print "" if ($opt_help);
   exit(0);

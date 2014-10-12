@@ -38,6 +38,7 @@ sub get_host_id_by_ip($$$) {
   return -3 unless (is_cidr($ip));
 
   $ip =~ s/\/32$//;
+  $ip =~ s/\/128$//; # For IPv6.
   if ($zoneid > 0) {
     $rule = " h.zone=$zoneid ";
   } else {

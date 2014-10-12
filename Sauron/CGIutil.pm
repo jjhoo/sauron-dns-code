@@ -1,7 +1,7 @@
 # Sauron::CGIutil.pm  --  generic CGI stuff
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2001-2003,2005.
-# $Id$
+# $Id:$
 #
 package Sauron::CGIutil;
 require Exporter;
@@ -10,10 +10,11 @@ use Time::Local;
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;
+use Net::IP; # For IPv6.
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -120,53 +121,58 @@ sub form_check_field($$$) {
 
   if ($type eq 'fqdn' || $type eq 'domain') {
     if ($type eq 'domain') {
-      return 'valid domain name required!' unless (valid_domainname($value));
+# Conditionally allow %{id} in domain name; this will be replaced later. ****
+	my $tvalue = $value;
+	if ($field->{defhost}) { $tvalue =~ s/%\{id\}/123/; }
+	return 'Valid domain name required!' unless (valid_domainname($tvalue));
     } else {
       return 'FQDN required!'
 	unless (valid_domainname($value) && $value=~/\.$/);
     }
   } elsif ($type eq 'zonename') {
-    return 'valid zone name required!'
+    return 'Valid zone name required!'
       unless (valid_domainname_check($value,1));
   } elsif ($type eq 'srvname') {
-    return 'valid SRV name required!'
+    return 'Valid SRV name required!'
       unless (valid_domainname_check($value,2));
   } elsif ($type eq 'path') {
-    return 'valid pathname required!'
+    return 'Valid pathname required!'
       unless ($value =~ /^(|\S+\/)$/);
   } elsif ($type eq 'ip') {
-    return 'valid IP number required!' unless 
-      ($value =~ /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/);
+# Check for IPv6 added.
+    return 'Valid IP number required!' unless 
+      ($value =~ /^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/ or
+      Net::IP::ip_is_ipv6($value));
   } elsif ($type eq 'cidr') {
-    return 'valid CIDR (IP) required!' unless (is_cidr($value));
+    return 'Valid CIDR (IP) required!' unless (is_cidr($value));
   } elsif ($type eq 'text') {
     return '';
   } elsif ($type eq 'email') {
-    return 'valid email address required!'
+    return 'Valid email address required!'
       unless (($tmp1,$tmp2)=($value =~ /^(\S+)\@(\S+)$/));
-    return 'invalid domain part in email address!'
+    return 'Invalid domain part in email address!'
       unless (valid_domainname($tmp2));
-    return 'invalid email address!'
+    return 'Invalid email address!'
       unless ($tmp1 =~ /^[A-Za-z0-9_\.\+\-]+$/);
   } elsif ($type eq 'passwd') {
     return '';
   } elsif ($type eq 'enum') {
     return '';
   } elsif ($type eq 'mx') {
-    return 'valid domain or "$DOMAIN" required!'
+    return 'Valid domain or "$DOMAIN" required!'
       unless(($value eq '$DOMAIN') || valid_domainname($value));
   } elsif ($type eq 'int' || $type eq 'priority') {
-    return 'integer required!' unless ($value =~ /^(-?\d+)$/);
+    return 'Integer required!' unless ($value =~ /^(-?\d+)$/);
     $t=$1;
     if ($type eq 'priority') {
-      return 'priority (0..n) required!' unless ($t >= 0);
+      return 'Priority (0..n) required!' unless ($t >= 0);
     }
   } elsif ($type eq 'port') {
-    return 'port number required!' unless ($value > 0 && $value < 65535);
+    return 'Port number required!' unless ($value > 0 && $value < 65535);
   } elsif ($type eq 'bool') {
-    return 'boolean value required!' unless ($value =~ /^(t|f)$/);
+    return 'Boolean value required!' unless ($value =~ /^(t|f)$/);
   } elsif ($type eq 'mac') {
-    return 'Ethernet address required!'
+    return 'Ethernet (MAC) address required!'
       unless ($value =~ /^([0-9A-F]{12})$/);
   } elsif ($type eq 'printer_class') {
     return 'Valid printer class name required!'
@@ -190,7 +196,7 @@ sub form_check_field($$$) {
     return 'Invalid (empty) date range' unless ($value =~ /\d+/);
     return '';
   } else {
-    return "unknown typecheck for form_check_field: $type !";
+    return "Unknown typecheck for form_check_field: $type !";
   }
 
   return '';
@@ -262,6 +268,9 @@ sub form_check_form($$$) {
 	#$val =~ s/\n/\\n/g;
 	#print "textarea:<BR><PRE>",$val,"</PRE><BR>END.";
       }
+      if ($form->{defhost} && $rec->{type} eq 'domain') { # ****
+	  $rec->{defhost} = 1;
+      }
       #print "<br>check $p ",param($p);
       return 1 if (form_check_field($rec,$val,0) ne '');
       if ($rec->{chr} == 1) {
@@ -281,6 +290,8 @@ sub form_check_form($$$) {
 	} else {
 	  $val=0;
 	}
+      }
+      if ($rec->{defhost} && $val =~ /%\{.+\}/) { # ****
       }
 
       $data->{$tag}=$val;
@@ -409,6 +420,7 @@ sub form_magic($$$) {
 
       if ($rec->{ftype} == 1 || $rec->{ftype} == 101) {
 	$val =~ s/\/32$// if ($rec->{type} eq 'ip');
+	$val =~ s/\/128$// if ($rec->{type} eq 'ip'); # For IPv6.
         if ($rec->{type} eq 'expiration') {
 	  if ($val > 0) {
 	    ($tmpd,$tmpm,$tmpy)=(localtime($val))[3,4,5];
@@ -431,6 +443,7 @@ sub form_magic($$$) {
 	  for $k (1..$rec->{fields}) {
 	    $val=$$a[$j][$k];
 	    $val =~ s/\/32$// if ($rec->{type}[$k-1] eq 'ip');
+	    $val =~ s/\/128$// if ($rec->{type}[$k-1] eq 'ip'); # For IPv6.
 	    param($p1."_".$j."_".$k,$val);
 	  }
 	}
@@ -454,9 +467,15 @@ sub form_magic($$$) {
 	  $ip=$$a[$j][1];
 	  $ip =~ s/\/\d{1,2}$//g;
 	  param($p1."_".$j."_1",$ip);
-	  $t=''; $t='on' if ($$a[$j][2] eq 't' || $$a[$j][2] == 1);
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#	  $t=''; $t='on' if ($$a[$j][2] eq 't' || $$a[$j][2] == 1);
+	  $t=''; $t='on' if ($$a[$j][2] eq 't' || $$a[$j][2] eq '1');
 	  param($p1."_".$j."_2",$t);
-	  $t=''; $t='on' if ($$a[$j][3] eq 't' || $$a[$j][3] == 1);
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#	  $t=''; $t='on' if ($$a[$j][3] eq 't' || $$a[$j][3] == 1);
+	  $t=''; $t='on' if ($$a[$j][3] eq 't' || $$a[$j][3] eq '1');
 	  param($p1."_".$j."_3",$t);
 	  #param($p1."_".$j."_4",$$a[$j][4]);
 	}
@@ -539,6 +558,18 @@ sub form_magic($$$) {
 	$def_info='empty' if ($def_info eq '');
 	print "<FONT size=-1 color=\"blue\"> ($def_info = default)</FONT>";
       }
+# Can search hosts in any domain the user has access to.
+      if ($rec->{anydomain}) {
+	  print checkbox(-label=>'Any domain', -name=>$p1."_anydom",
+			 -checked=>$$data{$p1."_anydom"}, -value=>'on');
+      }
+      if ($rec->{macnotify} && $data->{ip_policy} == 20) {
+	  print '(In the pre-selected subnet<br>' .
+	      'IPv6 address will be derived from MAC address, which you must give)';
+      }
+      if ($form->{defhost} && $rec->{type} eq 'domain') { # ****
+	  $rec->{defhost} = 1;
+      }
       print "<FONT size=-1 color=\"red\"><BR> " .
             form_check_field($rec,param($p1),0) . "</FONT>";
       if ($rec->{chr} == 1) {
@@ -591,6 +622,9 @@ sub form_magic($$$) {
       print "</TR></TABLE></TD>\n";
     } elsif ($rec->{ftype} == 3) {
       if ($rec->{type} eq 'enum') {
+	  if ($rec->{ip_type_sensitive}) { # ****
+	      $rec->{enum} = ip_policy_names($data->{net});
+	  }
 	$enum=$rec->{enum};
 	if ($rec->{elist}) { $values=$rec->{elist}; }
 	else { $values=[sort keys %{$enum}]; }
@@ -602,9 +636,16 @@ sub form_magic($$$) {
 	  $values=[sort keys %{$enum}];
 	}
       }
+      my $selection = param($p1); # ****
+      if ($rec->{preselectnet} && $selection eq 'MANUAL') {
+	  $selection = $data->{preselectnet};
+      }
       print td($rec->{name}),
 	    td(popup_menu(-name=>$p1,-values=>$values,
-	                  -default=>param($p1),-labels=>$enum));
+			  -override=>1,
+#	                  -default=>param($p1),
+			  -default=>"$selection", # ****
+			  -labels=>$enum));
     } elsif ($rec->{ftype} == 4) {
       $val=param($p1);
       $val=${$rec->{enum}}{$val}  if ($rec->{type} eq 'enum');
@@ -633,7 +674,11 @@ sub form_magic($$$) {
 	print "<TR>",hidden(-name=>$p2."_id",-value=>param($p2."_id"));
 
 	$n=$p2."_1";
-	print "<TD>",textfield(-name=>$n,-size=>15,-value=>param($n));
+	if (!param($n) && param('subnetlist') && param('subnetlist') ne 'null') { # ****
+	    param($n, param('subnetlist'));
+	}
+# Length of address field 15 -> 39 for IPv6.
+	print "<TD>",textfield(-name=>$n,-size=>39,-value=>param($n));
         print "<FONT size=-1 color=\"red\"><BR>",
               form_check_field($rec,param($n),1),"</FONT></TD>";
 
@@ -647,7 +692,8 @@ sub form_magic($$$) {
 	}
 	else {
 	  $n=$p2."_3";
-	  print td(checkbox(-label=>' A',-name=>$n,-checked=>param($n)));
+# A -> A/AAAA for IPv6.
+	  print td(checkbox(-label=>' A/AAAA',-name=>$n,-checked=>param($n)));
 	  $n=$p2."_2";
 	  print td(checkbox(-label=>' PTR',-name=>$n,-checked=>param($n)));
 
@@ -660,9 +706,15 @@ sub form_magic($$$) {
       unless ($rec->{restricted_mode}) {
 	$j=$a+1;
 	$n=$prefix."_".$rec->{tag}."_".$j."_1";
-	print "<TR>",td(textfield(-name=>$n,-size=>15,-value=>param($n))),
-	      td(submit(-name=>$prefix."_".$rec->{tag}."_add",-value=>'Add')),
-	      "</TR>";
+	my $subnetlist = '';
+	if ($rec->{subnetlist}) { # ****
+	    $subnetlist = get_ip_sugg($data->{hostid}, $serverid, $data->{perms});
+	}
+# Length of address field 15 -> 39 for IPv6.
+	print "<TR>",td(textfield(-name=>$n,-size=>39,-value=>param($n))),
+	td(submit(-name=>$prefix."_".$rec->{tag}."_add",-value=>'Add')),
+	"<td colspan=2>$subnetlist</td>",
+	"</TR>";
       }
 
       print "</TABLE></TD>\n";
@@ -829,7 +881,8 @@ sub form_magic($$$) {
 				-values=>[0,1],-labels=>{0=>' ',1=>'NOT'})),
 	          "<TD>";
 	    if ($aml_mode == 0) {
-		print textfield(-name=>$p2."_2",-size=>18,-maxlength=>18,
+# 18 -> 43 for IPv6.
+		print textfield(-name=>$p2."_2",-size=>43,-maxlength=>43,
 				-value=>$aml_cidr),
 		      hidden(-name=>$p2."_3",$aml_acl),
   		      hidden(-name=>$p2."_4",$aml_key);
@@ -863,7 +916,8 @@ sub form_magic($$$) {
 	      "<TD rowspan=3 bgcolor=\"#efefef\">",
 	      popup_menu(-name=>$p2."_5",-default=>'0',
 			    -values=>[0,1],-labels=>{0=>' ',1=>'NOT'}),"</TD>",
-	      "<TD>",textfield(-name=>$p2."_2",-size=>18,-maxlength=>18,
+# 18 -> 43 for IPv6.
+	      "<TD>",textfield(-name=>$p2."_2",-size=>43,-maxlength=>43,
 			   -value=>''),
 	      "</TD><TD rowspan=3 bgcolor=\"#efefef\">",
 	      textfield(-name=>$p2."_6",-size=>25,-maxlength=>80,
@@ -987,6 +1041,7 @@ sub display_form($$) {
       next if ($rec->{no_empty} && $val eq '');
 
       $val =~ s/\/32$// if ($rec->{type} eq 'ip');
+      $val =~ s/\/128$// if ($rec->{type} eq 'ip'); # For IPv6.
       if ($rec->{type} eq 'expiration') {
 	unless ($val > 0) {
 	  $val = '<FONT color="blue">NO expiration date set</FONT>';
@@ -1002,7 +1057,8 @@ sub display_form($$) {
 	  $val="<FONT color=\"blue\">$rec->{definfo}[1]</FONT>";
 	}
       }
-
+# If there is an URL, show it as a link, when requested.
+      if ($rec->{anchor}) { $val = url2link($val); }
       $val='&nbsp;' if ($val eq '');
       print "<TD WIDTH=\"",$form->{nwidth},"\">",$rec->{name},"</TD><TD>",
             "$val</TD>";
@@ -1021,6 +1077,7 @@ sub display_form($$) {
 	for $k (1..$rec->{fields}) {
 	  $val=$$a[$j][$k];
 	  $val =~ s/\/32$// if ($rec->{type}[$k-1] eq 'ip');
+	  $val =~ s/\/128$// if ($rec->{type}[$k-1] eq 'ip'); # For IPv6.
 	  $val='&nbsp;' if ($val eq '');
 	  print td($val);
 	}
@@ -1029,6 +1086,10 @@ sub display_form($$) {
       if (@{$a} < 2) { print "<TR><TD>&nbsp;</TD></TR>"; }
       print "</TABLE></TD>";
     } elsif ($rec->{ftype} == 3) {
+	  if ($rec->{ip_type_sensitive}) { # ****
+	      $rec->{enum} = ip_policy_names($data->{net});
+	      $val = $rec->{enum}->{$data->{ip_policy}};
+	  }
       print "<TD WIDTH=\"",$form->{nwidth},"\">",$rec->{name},"</TD><TD>",
             "$val</TD>";
     } elsif ($rec->{ftype} == 4) {
@@ -1043,8 +1104,15 @@ sub display_form($$) {
 	$ip=$$a[$j][1];
 	$ip=~ s/\/\d{1,2}$//g;
 	$ipinfo='';
-	$ipinfo.=' (no reverse)' if ($$a[$j][2] ne 't' && $$a[$j][2] != 1);
-	$ipinfo.=' (no A record)' if ($$a[$j][3] ne 't' && $$a[$j][3] != 1);
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#	$ipinfo.=' (no reverse)' if ($$a[$j][2] ne 't' && $$a[$j][2] != 1);
+	$ipinfo.=' (no reverse)' if ($$a[$j][2] ne 't' && $$a[$j][2] ne '1');
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+# A -> A/AAAA for IPv6.
+#	$ipinfo.=' (no A/AAAA record)' if ($$a[$j][3] ne 't' && $$a[$j][3] != 1);
+	$ipinfo.=' (no A/AAAA record)' if ($$a[$j][3] ne 't' && $$a[$j][3] ne '1');
 	print Tr(td($ip),td($ipinfo));
       }
       print "</TABLE></TD>";

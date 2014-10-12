@@ -1,7 +1,7 @@
 # Sauron::CGI::Servers.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2005.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::Servers;
 require Exporter;
@@ -13,7 +13,7 @@ use Sauron::CGI::Utils;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -29,7 +29,8 @@ my %server_form = (
   {ftype=>4, tag=>'server_type', name=>'Server type'},
   {ftype=>1, tag=>'hostname', name=>'Hostname',type=>'fqdn', len=>40,
    default=>'ns.my.domain.',maxlen=>64},
-  {ftype=>1, tag=>'hostaddr', name=>'IP address',type=>'ip',empty=>0,len=>15},
+# Len 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'hostaddr', name=>'IP address',type=>'ip',empty=>0,len=>39},
   {ftype=>3, tag=>'zones_only', name=>'Output mode', type=>'enum',
    conv=>'L', enum=>{t=>'Generate named.zones',f=>'Generate full named.conf'}},
   {ftype=>1, tag=>'comment', name=>'Comments',  type=>'text', len=>60,
@@ -39,7 +40,8 @@ my %server_form = (
    type=>'enum', enum=>{0=>'No',1=>'Yes'}, iff=>['masterserver','\d+']},
 
   {ftype=>0, name=>'Defaults for zones'},
-  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'fqdn', len=>30,
+# Len 30 -> 64.
+  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'fqdn', len=>64,
    default=>'hostmaster.my.domain.',maxlen=>64},
   {ftype=>1, tag=>'refresh', name=>'Refresh', type=>'int', len=>10},
   {ftype=>1, tag=>'retry', name=>'Retry', type=>'int', len=>10},
@@ -73,18 +75,22 @@ my %server_form = (
   {ftype=>0, name=>'Server bindings'},
   {ftype=>3, tag=>'forward', name=>'Forward (mode)', type=>'enum',
    conv=>'U', enum=>{'D'=>'Default','O'=>'Only','F'=>'First'}},
+# Len 20 -> 39 for IPv6.
   {ftype=>2, tag=>'forwarders', name=>'Forwarders', fields=>2,
-   type=>['ip','text'], len=>[20,30], empty=>[0,1],elabels=>['IP','comment']},
+   type=>['ip','text'], len=>[39,30], empty=>[0,1],elabels=>['IP','comment']},
+# Len 15 -> 39 for IPv6.
   {ftype=>1, tag=>'transfer_source', name=>'Transfer source IP',
-   type=>'ip', empty=>1, definfo=>['','Default'], len=>15},
+   type=>'ip', empty=>1, definfo=>['','Default'], len=>39},
+# Len 15 -> 39 for IPv6.
   {ftype=>1, tag=>'query_src_ip', name=>'Query source IP',
-   type=>'ip', empty=>1, definfo=>['','Default'], len=>15},
+   type=>'ip', empty=>1, definfo=>['','Default'], len=>39},
   {ftype=>1, tag=>'query_src_port', name=>'Query source port', 
    type=>'port', empty=>1, definfo=>['','Default port'], len=>5},
   {ftype=>1, tag=>'listen_on_port', name=>'Listen on port',
    type=>'port', empty=>1, definfo=>['','Default port'], len=>5},
+# Len 20 -> 43 for IPv6.
   {ftype=>2, tag=>'listen_on', name=>'Listen-on', fields=>2,
-   type=>['cidr','text'], len=>[20,30], empty=>[0,1],
+   type=>['cidr','text'], len=>[43,30], empty=>[0,1],
    elabels=>['CIDR','comment']},
 
   {ftype=>0, name=>'Access control'},
@@ -183,8 +189,10 @@ my %new_server_form=(
    len=>20, empty=>0},
   {ftype=>1, tag=>'hostname', name=>'Hostname',type=>'fqdn', len=>40,
    default=>'ns.my.domain.',maxlen=>64},
-  {ftype=>1, tag=>'hostaddr', name=>'IP address',type=>'ip',empty=>0,len=>15},
-  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'fqdn', len=>30,
+# Len 15 -> 39 for IPv6.
+  {ftype=>1, tag=>'hostaddr', name=>'IP address',type=>'ip',empty=>0,len=>39},
+# Len 30 -> 64.
+  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'fqdn', len=>64,
    default=>'hostmaster.my.domain.',maxlen=>64},
   {ftype=>1, tag=>'directory', name=>'Configuration directory', type=>'path',
    len=>30, empty=>0},

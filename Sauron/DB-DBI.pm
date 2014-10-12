@@ -1,6 +1,6 @@
 # Sauron::DB.pm  -- Sauron database interface routines using DBI
 #
-# $Id$
+# $Id:$
 #
 package Sauron::DB;
 require Exporter;
@@ -10,7 +10,7 @@ use Sauron::Util;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

@@ -7,7 +7,7 @@
 #
 require 5;
 use Getopt::Long;
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::UtilZone;
@@ -120,8 +120,12 @@ foreach $domain (sort keys %zonedata) {
     $id=-1;
   }
 
+# 'if ($opt_verbose)' & 'next;' added.
+# __FILE__ & __LINE__ added.
   unless (@{$rec->{A}} > 0 || $rec->{CNAME} || @{$rec->{SRV}} > 0) {
-    print "unknown record type SKIPPED!\n";
+    print __FILE__ . ':' . __LINE__ . " unknown record type SKIPPED!\n"
+	if ($opt_verbose);
+    next;
   }
 
   unless ($id > 0) {
@@ -149,6 +153,7 @@ foreach $domain (sort keys %zonedata) {
     }
   }
   elsif ($host{type}==9) {
+
     for $i (0..$#{$a}) {
       print " DHCP IP: $$a[$i]\n" if ($opt_verbose);
       push @{$host{ip}}, [0,$$a[$i],'f','f',2];

@@ -1,7 +1,7 @@
 # Sauron::Sauron.pm -- configuration file parsing and default settings
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2007.
-# $Id$
+# $Id:$
 #
 package Sauron::Sauron;
 require Exporter;
@@ -99,8 +99,11 @@ sub set_defaults() {
   $main::ALEVEL_TRACEROUTE = 1;
   $main::ALEVEL_HISTORY = 1;
 
-  $main::LOOPBACK_NET = '127.0.0.0/8';
+# $main::LOOPBACK_NET = '127.0.0.0/8';
+  $main::LOOPBACK_NET_IPv4 = '127.0.0.0/8'; # For IPv4.
+  $main::LOOPBACK_NET_IPv6 = '::1/128'; # For IPv6.
   $main::LOOPBACK_ZONE = 'loopback.';
+  $main::SAURON_ZERO_IP = '0.0.0.0'; # Can be '0.0.0.0' (for IPv4) or '::' (for IPv6).
 }
 
 

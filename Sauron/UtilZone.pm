@@ -1,7 +1,7 @@
 # Sauron::UtilZone.pm - BIND zone file reading/parsing routines
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000,2002.
-# $Id$
+# $Id:$
 #
 package Sauron::UtilZone;
 require Exporter;
@@ -12,7 +12,7 @@ use Sauron::Util;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -144,7 +144,7 @@ sub process_zonefile($$$$) {
 	      CLASS => $class,
 	      SOA => '',
 	      A => [],
-	      AAAA => [],
+#	      AAAA => [], # Removed during IPv6 conversion.
 	      PTR => [],
 	      CNAME => '',
 	      MX => [],
@@ -180,16 +180,29 @@ sub process_zonefile($$$$) {
     @line = split;
 
     # check & parse records
-    if ($type eq 'A') {
-      fatal("$filename($.): invalid A record: $fline")
-	unless (/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
-      push @{$rec->{A}}, $1;
+
+# During IPv6 conversion it turned out that it is easier to
+# handle A and AAAA records in a similar manner
+#    if ($type eq 'A') {
+#      fatal("$filename($.): invalid A record: $fline")
+#	unless (/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$/);
+#      push @{$rec->{A}}, $1;
+#    }
+#    elsif ($type eq 'AAAA') {
+#      fatal("$filename($.): invalid AAAA record: $fline")
+#	unless (ip_is_ipv6($_));
+#      push @{$rec->{AAAA}}, $_;
+#    }
+
+# New version added during IPv6 conversion.
+# A and AAAA records will be separated later, when necessary (usually separation
+# is not needed, and in one case it is much easier not to separate them).
+    if ($type eq 'A' || $type eq 'AAAA') {
+      fatal("$filename($.): invalid A/AAAA record: $fline")
+	unless (is_ip($_));
+      push @{$rec->{A}}, $_;
     }
-    elsif ($type eq 'AAAA') {
-      fatal("$filename($.): invalid AAAA record: $fline")
-	unless (ip_is_ipv6($_));
-      push @{$rec->{AAAA}}, $_;
-    }
+
     elsif ($type eq 'SOA') {
       fatal("$filename($.): duplicate SOA record: $fline")
 	if (length($rec->{SOA}) > 0);
@@ -298,7 +311,8 @@ sub process_zonefile($$$$) {
       $rec->{GROUP}=$1 if (/^(\S+)(\s|$)/);
     }
     elsif ($type eq 'ROUTER') {
-      if (/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(\s+(\S+)(\s|$))?/) {
+#     if (/^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s+(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})(\s+(\S+)(\s|$))?/) {
+      if (/^(\S)\s+(\S)(\s+(\S+)(\s|$))?/ && is_ip($1) && is_ip($2)) { # For IPv6.
 	#print "ROUTER '$1' '$2' '$4'\n";
 	$rec->{ROUTER} = "$1 $2 $4";
       } else {
@@ -322,7 +336,7 @@ sub process_zonefile($$$$) {
 }
 
 
-# reads zone from DNS using zone transfer, produces simila hash as
+# reads zone from DNS using zone transfer, produces similar hash as
 # result as process_zone function
 #
 sub process_zonedns($$$$) {
@@ -348,7 +362,8 @@ sub process_zonedns($$$$) {
 	$ttl = $rr->ttl;
 
 	next unless ($class eq 'IN');
-	unless ($type =~ /^(SOA|A|PTR|CNAME|MX|NS|TXT|HINFO|SRV|WKS)$/) {
+# AAAA added for IPv6.
+	unless ($type =~ /^(SOA|A|AAAA|PTR|CNAME|MX|NS|TXT|HINFO|SRV|WKS)$/) {
 	    $ucount++;
 	    print "Skipping: " . $rr->string . "\n" if ($verbose);
 	    next;
@@ -373,7 +388,8 @@ sub process_zonedns($$$$) {
 
 	$rec = $data->{$domain};
 
-	if ($type eq 'A') {
+#	if ($type eq 'A') {
+	if ($type eq 'A' || $type eq 'AAAA') { # For IPv6.
 	    push @{$rec->{A}}, $rr->address;
 	}
 	elsif ($type eq 'SOA') {

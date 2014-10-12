@@ -8,7 +8,7 @@
 #
 use CGI qw/:standard *table -no_xhtml/;
 use CGI::Carp 'fatalsToBrowser'; # debug stuff
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;
@@ -197,7 +197,8 @@ html_error("CGI interface disabled: $res") if (($res=cgi_disabled()));
 unless (is_cidr($remote_addr)) {
   logmsg("notice","Warning: www server does not set standard CGI " .
 	          "environment variable: REMOTE_ADDR!!! ($remote_addr)");
-  $remote_addr = '0.0.0.0';
+# $remote_addr = '0.0.0.0';
+  $remote_addr = $SAURON_ZERO_IP; # For IPv6.
 }
 
 ($scookie = cookie(-name=>"sauron-$SERVER_ID")) =~ s/[^A-Fa-f0-9]//g;
@@ -433,11 +434,15 @@ sub about_menu() {
 	"  alt=\"Sauron\">",
         "</a><BR>Version $VER<BR>(CGI $SAURON_CGI_VER)<P>",
         "a free DNS & DHCP management system<p>",
-        "<hr noshade width=\"40%\"><b>Author:</b>",
+        "<hr noshade width=\"50%\"><b>Author:</b>",
         "<br>Timo Kokkonen <i>&lt;tjko\@iki.fi&gt;</i>",
-        "<hr width=\"30%\"><b>Logo Design:</b>",
-        "<br>Teemu Lähteenmäki <i>&lt;tola\@iki.fi&gt;</i>",
-        "<hr noshade width=\"40%\"><p>",
+        "<hr width=\"40%\"><b>Logo Design:</b>",
+        "<br>Teemu L&auml;hteenm&auml;ki <i>&lt;tola\@iki.fi&gt;</i>",
+        "<hr width=\"40%\"><b>IPv6 Added by:</b>",
+        "<br>Teppo Vuori <i>&lt;sauron\@teppovuori.fi&gt;</i>",
+        "<p><b>With Support from:</b>",
+        "<br>Tapani Tarvainen <i>&lt;sauron\@tapanitarvainen.fi&gt;</i>",
+        "<hr noshade width=\"50%\"><p>",
 	"</CENTER><BR><BR>";
   }
 }
@@ -490,7 +495,7 @@ sub login_form($$) {
 	"<TR><TD colspan=2 bgcolor=\"#efefff\">";
 
   print start_form(-target=>'_top'),"<BR><CENTER>",h2($msg),p,"<TABLE>",
-        Tr,td("Login:"),td(textfield(-name=>'login_name',-maxlength=>'8')),
+        Tr,td("Login:"),td(textfield(-id=>"login",-name=>'login_name',-maxlength=>'8')),
         Tr,td("Password:"),
                    td(password_field(-name=>'login_pwd',-maxlength=>'30')),
               "</TABLE>",
@@ -502,7 +507,9 @@ sub login_form($$) {
   # save arguments (allows linking to "pages" in Sauron)
   foreach $arg (param()) { print hidden($arg,param($arg)); }
 
-  print end_form,end_html();
+  print end_form,
+  "\n<script type='text/JavaScript'>document.getElementById('login').focus();</script>",
+  end_html();
 
   $state{'mode'}='1';
   $state{'auth'}='no';
@@ -573,8 +580,11 @@ sub login_auth() {
 	$state{'login'}=$ticks;
 	$state{'serverid'}=$user{'server'};
 	$state{'zoneid'}=$user{'zone'};
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
 	$state{'superuser'}='yes' if ($user{superuser} eq 't' ||
-				      $user{superuser} == 1);
+#				      $user{superuser} == 1);
+				      $user{superuser} eq '1');
 	if ($state{'serverid'} > 0) {
 	  $state{'server'}=$h{'name'}
 	    unless(get_server($state{'serverid'},\%h));
@@ -851,13 +861,15 @@ sub init_plugins($) {
     $file="$PROG_DIR/plugins/$plugs[$i].conf";
     $file2="$PROG_DIR/plugins/$plugs[$i].pm";
     if (-r $file) {
+      $ALEVEL = 0; # Default required authorization level to use plugin.
       $ret = do "$file";
       if ($@) {
 	logmsg("notice","parse error in plugin info: $file");
       } elsif (not $ret) {
 	logmsg("notice", "failed to process plugin info: $file");
       }
-
+# Check authorization level of user and plugin. TVu
+      next unless (!check_perms('level', $ALEVEL, 1));
       # add commands defined by plugin into appropriate menu...
       for $j (0..$#{$MENUDATA}) {
 	push @{$menuhash{$MENU}}, [$$MENUDATA[$j][0],$$MENUDATA[$j][1]];

@@ -8,7 +8,8 @@
 #
 use CGI qw/:standard *table -no_xhtml/;
 use CGI::Carp 'fatalsToBrowser'; # debug stuff
-use Net::Netmask;
+# use Net::Netmask;
+use NetAddr::IP; # For IPv6.
 use Sauron::DB;
 use Sauron::Util;
 use Sauron::BackEnd;
@@ -26,10 +27,12 @@ $debug_mode = 0;
 load_browser_config();
 
 
-%host_types=(0=>'Any type',1=>'Host',2=>'Delegation',3=>'Plain MX',
-	     4=>'Alias',5=>'Printer',6=>'Glue record',7=>'AREC Alias',
-	     8=>'SRV record',9=>'DHCP only',10=>'Zone',
-	     101=>'Host reservation');
+#%host_types=(0=>'Any type',1=>'Host',2=>'Delegation',3=>'Plain MX',
+#	     4=>'Alias',5=>'Printer',6=>'Glue record',7=>'AREC Alias',
+#	     8=>'SRV record',9=>'DHCP only',10=>'Zone',
+3	     101=>'Host reservation');
+
+%host_types = get_host_types();
 
 %host_form = (
  data=>[
@@ -353,11 +356,13 @@ sub do_search() {
 
   # get list of networks to hide...
   db_query("SELECT id,net,type FROM nets WHERE type > 0",\@nlist);
-  my $blocktable = {};
+# my $blocktable = {};
+  my $blocktable = []; # For IPv6.
   for $i (0..$#nlist) {
     next unless ($nlist[$i][2] & 0x01);
-    $tmp = new Net::Netmask($nlist[$i][1]);
-    $tmp->storeNetblock($blocktable);
+#   $tmp = new Net::Netmask($nlist[$i][1]);
+#   $tmp->storeNetblock($blocktable);
+    push @$blocktable, new NetAddr::IP($nlist[$i][1]); # For IPv6.
   }
 
   for $i (0..($count-1)) {
@@ -367,11 +372,13 @@ sub do_search() {
     if ($type == 1 || $type == 9) {
       $ip=$q[$i][3];
       $ip =~ s/\/32//;
+      $ip =~ s/\/128//; # For IPv6.
       $ether=($q[$i][5] ? "<PRE>$q[$i][5]</PRE>" : '&nbsp;');
       $info='';
 
       # check if host ip falls within a net with private flag on
-      if (findNetblock($ip,$blocktable)) {
+#     if (findNetblock($ip,$blocktable)) {
+      if (is_in_netblock($ip,$blocktable)) { # For IPv6.
 	#print "PRIVATE: $ip $name<br>";
 	next if ($BROWSER_HIDE_PRIVATE || $info_search);
 	$info.=$q[$i][7] unless ($BROWSER_HIDE_FIELDS =~ /huser/);
@@ -439,7 +446,7 @@ sub display_host($) {
   $host{info}='' unless ($BROWSER_SHOW_FIELDS =~ /info/);
   $host{location}='' unless ($BROWSER_SHOW_FIELDS =~ /location/);
 
-  # check if host has A record within network marked as private
+  # check if host has A/AAAA record within network marked as private
   for $i (1..$#{$host{ip}}) {
     #print "foo$i: $host{ip}[$i][1]<br>";
     db_query("SELECT id,net,type FROM nets " .

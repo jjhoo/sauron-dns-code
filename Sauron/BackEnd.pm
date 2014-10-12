@@ -1,17 +1,19 @@
 # Sauron::BackEnd.pm  -- Sauron back-end routines
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2005.
-# $Id$
+# $Id:$
 #
 package Sauron::BackEnd;
 require Exporter;
-use Net::Netmask;
+# use Net::Netmask;
+use NetAddr::IP; # For IPv6;
 use Sauron::DB;
 use Sauron::Util;
+use bignum; # For IPv6.
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -57,6 +59,7 @@ $VERSION = '$Id$ ';
 	     update_host
 	     delete_host
 	     add_host
+             get_host_types
 
 	     get_mx_template_by_name
 	     get_mx_template
@@ -97,6 +100,7 @@ $VERSION = '$Id$ ';
              delete_user_group
 
 	     get_net_by_cidr
+             get_net_cidr_by_ip
 	     get_net_list
 	     get_net
 	     update_net
@@ -109,6 +113,11 @@ $VERSION = '$Id$ ';
 	     delete_vlan
 	     get_vlan_list
 	     get_vlan_by_name
+
+             ip_policy_names
+             get_net_ip_policy
+             get_free_ip_by_net
+	     get_ip_sugg
 
 	     get_vmps_by_name
 	     get_vmps
@@ -148,8 +157,8 @@ $VERSION = '$Id$ ';
 	     save_state
 	     load_state
 	     remove_state
-	    );
 
+	    );
 
 my($muser);
 
@@ -160,13 +169,16 @@ sub fix_bools($$) {
   @l=split(/,/,$names);
   foreach $name (@l) {
     $val=$rec->{$name};
-    $val=(($val eq 't' || $val == 1) ? 't' : 'f');
+# The original comparison stopped working, returning 'true' for 'f' == 1,
+# because of 'use bignum;', TVu 10.07.2012.
+#   $val=(($val eq 't' || $val == 1) ? 't' : 'f');
+    $val=(($val eq 't' || $val eq '1') ? 't' : 'f');
     $rec->{$name}=$val;
   }
 }
 
 sub sauron_db_version() {
-  return "1.4"; # required db format version for this backend
+  return "1.5"; # required db format version for this backend
 }
 
 sub set_muser($) {
@@ -182,6 +194,8 @@ sub get_db_version() {
 }
 
 
+# This should work for IPv6, but it may be slow or not work
+# if the network has a huge number of IPs in use
 sub auto_address($$) {
   my($serverid,$net) = @_;
   my(@q,$s,$e,$i,$j,%h);
@@ -208,7 +222,10 @@ sub auto_address($$) {
     $h{$j}=$q[$i][0];
     #print "<br>$q[$i][0]";
   }
-  for $i (0..($e-$s)) {
+# In theory, this loop could cause a timeout with IPv6,
+# in practice that is highly unlikely.
+# for $i (0..($e-$s)) {
+  for ($i = 0; $i <= $e - $s; $i++) { # For IPv6 (".." doesn't work with bignum).
     #print "<br>$i " . int2ip($s+$i);
     return int2ip($s+$i) unless ($h{($s+$i)});
   }
@@ -216,6 +233,9 @@ sub auto_address($$) {
   return "No free addresses left";
 }
 
+
+# This should work for IPv6, but it may be slow or not work
+# if the network has a huge number of IPs in use
 sub next_free_ip($$)
 {
   my($serverid,$ip) = @_;
@@ -231,9 +251,13 @@ sub next_free_ip($$)
 	   "WHERE z.server=$serverid AND h.zone=z.id AND a.host=h.id " .
 	   " AND '$q[0][0]' >> a.ip ORDER BY a.ip;",\@ips);
   for $i (0..$#ips) { $h{$ips[$i][0]} = 1; }
-  $net = new Net::Netmask($q[0][0]);
+# $net = new Net::Netmask($q[0][0]);
+  $net = new NetAddr::IP($q[0][0]); # For IPv6.
   $i = ip2int($ip) + 1;
-  while ($net->match(($t=int2ip($i)))) {
+# In theory, this loop could cause timeout with IPv6,
+# in practice that is highly unlikely.
+# while ($net->match(($t=int2ip($i)))) {
+  while ($net->contains(new NetAddr::IP($t=int2ip($i)))) { # For IPv6.
     return $t unless ($h{$t});
     $i++;
   }
@@ -297,18 +321,25 @@ sub get_host_network_settings($$$) {
   return -2 unless (@q > 0);
   return -3 unless ($q[$#q][0] > 0);
   $net = $q[$#q][2];
-  $tmp = new Net::Netmask($net);
-  $rec->{net}=$tmp->desc();
-  $rec->{base}=$tmp->base();
-  $rec->{mask}=$tmp->mask();
-  $rec->{broadcast}=$tmp->broadcast();
+
+#  $tmp = new Net::Netmask($net);
+#  $rec->{net}=$tmp->desc();
+#  $rec->{base}=$tmp->base();
+#  $rec->{mask}=$tmp->mask();
+#  $rec->{broadcast}=$tmp->broadcast();
+
+  $tmp = new NetAddr::IP($net); # For IPv6.
+  $rec->{net}=ipv6compress(lc($tmp->cidr()));
+  $rec->{base}=ipv6compress(lc($tmp->addr()));
+  $rec->{mask}=ipv6compress(lc($tmp->mask()));
+  $rec->{broadcast}=ipv6compress(lc($tmp->broadcast()->addr()));
 
   undef @q;
   db_query("SELECT a.ip FROM hosts h, a_entries a " .
 	   "WHERE a.host=h.id AND h.router>0 AND a.ip << '$net' " .
 	   "ORDER BY 1",\@q);
   if (@q > 0) {
-    $rec->{gateway}=$q[0][0];
+    $rec->{gateway}=ipv6compress(lc($q[0][0]));
   } else {
     $rec->{gateway}='';
   }
@@ -398,12 +429,17 @@ sub update_array_field($$$$$$) {
   for $i (1..$#{$list}) {
     $m=$$list[$i][$count];
     $id=$$list[$i][0];
-    if ($m == -1) { # delete record
+# The original comparison stopped working, returning 'true' for 'string' == -1,
+# because of 'use bignum;', TVu 01.08.2012.
+#   if ($m == -1) { # delete record
+    if ($m eq -1) { # delete record
       $str="DELETE FROM $table WHERE id=$id";
       #print "<BR>DEBUG: delete record $id $str";
       return -5 if (db_exec($str) < 0);
     }
-    elsif ($m == 1) { # update record
+# See comment above.
+#   elsif ($m == 1) { # update record
+    elsif ($m eq 1) { # update record
       $flag=0;
       $str="UPDATE $table SET ";
       for $j(1..($count-1)) {
@@ -415,7 +451,9 @@ sub update_array_field($$$$$$) {
       #print "<BR>DEBUG: update record $id $str";
       return -6 if (db_exec($str) < 0);
     }
-    elsif ($m == 2) { # add record
+# See comment above.
+#   elsif ($m == 2) { # add record
+    elsif ($m eq 2) { # add record
       $flag=0;
       $str="INSERT INTO $table ($fields) VALUES(";
       for $j(1..($count-1)) {
@@ -520,7 +558,7 @@ sub update_record($$) {
     next if ($key eq 'id');
     next if (ref($$rec{$key}) eq 'ARRAY');
 
-    $sqlstr.="," if ($flag);
+    $sqlstr.=", " if ($flag);
     if ($$rec{$key} eq '0') { $sqlstr.="$key='0'"; }  # HACK value :)
     else { $sqlstr.="$key=" . db_encode_str($$rec{$key}); }
 
@@ -554,6 +592,7 @@ sub add_record_sql($$) {
     $flag=1 unless ($flag);
   }
   $sqlstr.=")";
+  $sqlstr =~ s/hacked_id/id/; # Dirty hack to force an id into the database. ****
 
   return $sqlstr;
 }
@@ -1082,7 +1121,7 @@ sub get_zone($$) {
 	       "server,active,dummy,type,reverse,class,name,nnotify," .
 	       "hostmaster,serial,refresh,retry,expire,minimum,ttl," .
 	       "chknames,reversenet,comment,cdate,cuser,mdate,muser," .
-	       "forward,serial_date,flags,rdate,transfer_source",
+	       "forward,serial_date,flags,rdate,transfer_source,expiration",
 	       $id,$rec,"id");
   return -1 if ($res < 0);
   fix_bools($rec,"active,dummy,reverse,noreverse");
@@ -1144,12 +1183,32 @@ sub update_zone($) {
   $rec->{flags}|=0x01 if ($rec->{txt_auto_generation});
   delete $rec->{txt_auto_generation};
 
-  if ($rec->{reverse} eq 't' || $rec->{reverse} == 1) {
+# The original comparison stopped working, returning 'true' for 'f' == 1,
+# because of 'use bignum;', TVu 18.07.2012.
+# if ($rec->{reverse} eq 't' || $rec->{reverse} == 1) {
+  if ($rec->{reverse} eq 't' || $rec->{reverse} eq '1') {
+
+# For reverse zone, change IPv6 cidr to ip6.arpa format name.
+#     if ($rec->{name} =~ /\/\d{1,3}$/ && (cidr6ok($rec->{name}) || cidr64ok($rec->{name}))) {
+      if ($rec->{name} =~ /\/\d{1,2}$/ && cidr4ok($rec->{name}) ||
+	  $rec->{name} =~ /\/\d{1,3}$/ && (cidr6ok($rec->{name}) || cidr64ok($rec->{name}))) {
+	  $rec->{name} = cidr2arpa($rec->{name});
+      }
+
       $new_net=arpa2cidr($rec->{name});
-      if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+#     if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+      if (($new_net eq '0.0.0.0/0') or ($new_net eq '') or # For IPv6.
+	  ipv6compress(cidr64ok($new_net) ? ipv64unmix($new_net) : $new_net) eq '::/0') {
 	  return -100;
       }
       $rec->{reversenet}=$new_net;
+  }
+
+# Check if cidr has been used as forward zone name (error).
+  if (!($rec->{reverse} eq 't' || $rec->{reverse} eq '1') &&
+#     (cidr6ok($rec->{name}) || cidr64ok($rec->{name}))) {
+      is_cidr($rec->{name})) {
+      return -101;
   }
 
   db_begin();
@@ -1346,10 +1405,18 @@ sub add_zone($) {
 
   if ($rec->{reverse} =~ /^(t|true)$/) {
       $new_net=arpa2cidr($rec->{name});
-      if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+#     if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+      if (($new_net eq '0.0.0.0/0') or ($new_net eq '') or # For IPv6.
+	  ipv6compress(cidr64ok($new_net) ? ipv64unmix($new_net) : $new_net) eq '::/0') {
 	  return -100;
       }
       $rec->{reversenet}=$new_net;
+  }
+
+# Check if cidr has been used as forward zone name.
+  if (!($rec->{reverse} =~ /^(t|true)$/) &&
+      (cidr6ok($rec->{name}) || cidr64ok($rec->{name}))) {
+      return -22;
   }
 
   db_begin();
@@ -1432,7 +1499,9 @@ sub copy_zone($$$$) {
 
   if ($z{reverse} =~ /^(t|true)$/) {
     $new_net=arpa2cidr($newname);
-    if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+#   if (($new_net eq '0.0.0.0/0') or ($new_net eq '')) {
+    if (($new_net eq '0.0.0.0/0') or ($new_net eq '') or # For IPv6.
+      ipv6compress(cidr64ok($new_net) ? ipv64unmix($new_net) : $new_net) eq '::/0') {
       return -100;
     }
     $z{reversenet}=$new_net;
@@ -1506,7 +1575,7 @@ sub copy_zone($$$$) {
   for $i (0..$#hids) { $hidh{$hids[$i][0]}=$hids[$i][1]; }
 
   # a_entries
-  print "<BR>Copying A records..." if ($verbose);
+  print "<BR>Copying A/AAAA records..." if ($verbose);
   $res=copy_records('a_entries','a_entries','id','host',\@hids,
      'ip,ipv6,type,reverse,forward,comment',
      "SELECT a.id FROM a_entries a,hosts h WHERE a.host=h.id AND h.zone=$id");
@@ -1817,6 +1886,7 @@ sub update_host($) {
     if ($r < 0) { db_rollback(); return -21; }
   }
 
+#  print "<br>$rec<br>";
   $r=update_array_field("group_entries",2,"grp,host",
 			'subgroups',$rec,"$id");
   if ($r < 0) { db_rollback(); return -22; }
@@ -1898,7 +1968,7 @@ sub delete_host($) {
 
 sub add_host($) {
   my($rec) = @_;
-  my($res,$i,$id,$a_id);
+  my($res,$i,$id,$a_id,@q);
 
   return -100 unless ($rec->{zone} > 0);
   db_begin();
@@ -1909,6 +1979,19 @@ sub add_host($) {
   $rec->{cuser}=$muser;
   $rec->{cdate}=time;
   $rec->{domain}=lc($rec->{domain});
+
+# Replace tag with id. ****
+  if ($rec->{domain} =~ /%\{id\}/) {
+      my $sql = 'select nextval((\'hosts_id_seq\'::text)::regclass);';
+      db_query($sql, \@q);
+      if ($q[0][0]) {
+	  $rec->{hacked_id} = $q[0][0];
+	  $rec->{domain} =~ s/%\{id\}/$q[0][0]/;
+      } else {
+	  return -10;
+      }
+  }
+
   $res=add_record('hosts',$rec);
   if ($res < 0) { db_rollback(); return -1; }
   $id=$res;
@@ -1953,6 +2036,15 @@ sub add_host($) {
   return $id;
 }
 
+# List moved from browser.cgi so that it can be used also in command line
+# tools without need to update multiple lists, should the list change.
+# TVu 02.04.2014.
+sub get_host_types() {
+    return (0 => 'Any type', 1 => 'Host', 2 => 'Delegation', 3 => 'Plain MX',
+	    4 => 'Alias', 5 => 'Printer', 6 => 'Glue record', 7 => 'AREC Alias',
+	    8 => 'SRV record', 9 => 'DHCP only', 10 => 'Zone',
+	    101 => 'Host reservation');
+}
 
 ############################################################################
 # MX template functions
@@ -2533,6 +2625,15 @@ sub get_net_by_cidr($$) {
   return ($q[0][0] > 0 ? $q[0][0] : -1);
 }
 
+sub get_net_cidr_by_ip($$) {
+  my($serverid,$ip) = @_;
+  my(@q);
+
+  return '-1' unless ($serverid > 0);
+  return '-2' unless (is_ip($ip));
+  db_query("SELECT net FROM nets WHERE server=$serverid AND net >> '$ip' order by net desc limit 1",\@q);
+  return ($q[0][0] ? $q[0][0] : '');
+}
 
 sub get_net_list($$$) {
   my ($serverid,$subnets,$alevel) = @_;
@@ -2569,7 +2670,7 @@ sub get_net($$) {
   return -100 if (get_record("nets",
                       "server,name,net,subnet,rp_mbox,rp_txt,no_dhcp,comment,".
 		      "range_start,range_end,vlan,cdate,cuser,mdate,muser,".
-                      "netname,alevel,type,dummy", $id,$rec,"id"));
+                      "netname,alevel,type,dummy,ip_policy", $id,$rec,"id"));
 
   fix_bools($rec,"subnet,no_dhcp,dummy");
   get_array_field("dhcp_entries",3,"id,dhcp,comment","DHCP,Comment",
@@ -2585,13 +2686,16 @@ sub update_net($) {
   my($r,$id,$net);
 
   return -100 unless (is_cidr($rec->{net}));
-  $net = new Net::Netmask($rec->{net});
+# $net = new Net::Netmask($rec->{net});
+  $net = new NetAddr::IP($rec->{net}); # For IPv6.
   return -101 unless ($net);
   if (is_cidr($rec->{range_start})) {
-    return -102 unless ($net->match($rec->{range_start}));
+#   return -102 unless ($net->match($rec->{range_start}));
+    return -102 unless ($net->contains(new NetAddr::IP($rec->{range_start}))); # For IPv6.
   }
   if (is_cidr($rec->{range_end})) {
-    return -102 unless ($net->match($rec->{range_end}));
+#   return -102 unless ($net->match($rec->{range_end}));
+    return -102 unless ($net->contains(new NetAddr::IP($rec->{range_end}))); # For IPv6.
   }
 
   del_std_fields($rec);
@@ -2623,12 +2727,25 @@ sub add_net($) {
   $rec->{cuser}=$muser;
 
   return -100 unless (is_cidr($rec->{net}));
-  $net = new Net::Netmask($rec->{net});
-  return -101 unless ($net);
-  $rec->{range_start}=$net->nth(1)
-    unless (is_cidr($rec->{range_start}));
-  $rec->{range_end}=$net->nth(-2)
-    unless (is_cidr($rec->{range_end}));
+
+#  $net = new Net::Netmask($rec->{net});
+#  return -101 unless ($net);
+#  $rec->{range_start}=$net->nth(1)
+#    unless (is_cidr($rec->{range_start}));
+#  $rec->{range_end}=$net->nth(-2)
+#    unless (is_cidr($rec->{range_end}));
+
+# For IPv6.
+# Range start and end must be ips, not cidrs.
+# Tests have been modified accordingly.
+# While Net::Netmask returned ips, NetAddr::IP returns
+# cidrs, which is why masks must be removed.
+  return -101 unless (is_cidr($rec->{net}));
+  $net = new NetAddr::IP($rec->{net});
+  ($rec->{range_start} = $net->first()) =~ s=/\d{1,3}$==
+    unless (is_ip($rec->{range_start}));
+  ($rec->{range_end} = $net->last()) =~ s=/\d{1,3}$==
+    unless (is_ip($rec->{range_end}));
 
   $res = add_record('nets',$rec);
   if ($res < 0) { db_rollback(); return -1; }
@@ -2775,6 +2892,177 @@ sub get_vlan_by_name($$) {
   $name=db_encode_str($name);
   db_query("SELECT id FROM vlans WHERE server=$serverid AND name=$name",\@q);
   return ($q[0][0] > 0 ? $q[0][0] : -1);
+}
+
+############################################################################
+# IP functions
+
+# Name network's ip policies. ****
+sub ip_policy_names($) {
+    return @_[0] =~ /:/ ? 
+        {0=>'Lowest free', 10=>'Highest free', 20=>'MAC based', 30=>'IPv4 based'} :
+        {0=>'Lowest free', 10=>'Highest free'};
+}
+
+sub get_net_ip_policy($$) { # ****
+    my ($serverid, $cidr) = @_;
+    my ($sql, @res);
+
+    $cidr =~ s=^(.*)/.*$=$1=;
+    $sql = "select ip_policy from nets n where n.server = $serverid and " .
+	"'$cidr' <<= n.net order by ip_policy desc;";
+    db_query($sql, \@res);
+    return $res[0][0];
+}
+
+# Get one free ip based on net's ip address policy etc. ****
+sub get_free_ip_by_net($$$$$) {
+    my ($serverid, $cidr, $mac, $old_ip, $ip_policy) = @_;
+    my ($tmp1, $mask, $sql, @res);
+
+# Each error message MUST be prepended by  "S:" (subnet level error)
+# or "H:" (host level error). This is needed in addipv6.
+
+    ($mask = $cidr) =~ s=^.*/(.*)$=$1=;
+    $mask =~ s/\D//g;
+# 0 = Lowest free.
+    if ($ip_policy == 0) {
+	my ($beg, $end);
+	$sql = "SELECT range_start, range_end FROM nets " .
+	    "WHERE server = $serverid AND net = '$cidr';";
+	db_query($sql, \@res);
+	return 'S:No auto address range for this net'
+	    unless (is_cidr($res[0][0]) && is_cidr($res[0][1]));
+	return 'S:Net has invalid auto address range'
+	    if (ip2int($res[0][0]) >= ip2int($res[0][1]));
+	$beg = $res[0][0];
+	$end = $res[0][1];
+# Beginning of range must be handled separately.
+	return $beg if (!ip_in_use($serverid, $beg));
+# Find all used addresses in given range, drop all cases where the next address
+# is also in use, and return the smallest of remaining addresses plus one.
+	$sql = "select a.ip + 1 from a_entries a, hosts h, zones z " .
+	    "where z.server = $serverid and h.zone = z.id and a.host = h.id " .
+	    "and a.ip >= '$beg' and a.ip < '$end' and a.ip + 1 not in (" .
+	    "select a.ip from a_entries a, hosts h, zones z " .
+	    "where z.server = $serverid and h.zone = z.id and a.host = h.id " .
+	    "and a.ip >= '$beg' and a.ip <= '$end') " .
+	    "order by a.ip asc limit 1;";
+	undef @res;
+	db_query($sql, \@res);
+	return 'S:No free addresses left in this net' if (!@res);
+	return $res[0][0];
+# 10 = Highest free.
+    } elsif ($ip_policy == 10) {
+	my ($beg, $end);
+	$sql = "SELECT range_start, range_end FROM nets " .
+	    "WHERE server = $serverid AND net = '$cidr';";
+	db_query($sql, \@res);
+	return 'S:No auto address range for this net'
+	    unless (is_cidr($res[0][0]) && is_cidr($res[0][1]));
+	return 'S:Net has invalid auto address range'
+	    if (ip2int($res[0][0]) >= ip2int($res[0][1]));
+	$beg = $res[0][0];
+	$end = $res[0][1];
+	return $end if (!ip_in_use($serverid, $end));
+# See "Lowest free" above for details.
+	$sql = "select a.ip - 1 from a_entries a, hosts h, zones z " .
+	    "where z.server = $serverid and h.zone = z.id and a.host = h.id " .
+	    "and a.ip > '$beg' and a.ip <= '$end' and a.ip - 1 not in (" .
+	    "select a.ip from a_entries a, hosts h, zones z " .
+	    "where z.server = $serverid and h.zone = z.id and a.host = h.id " .
+	    "and a.ip >= '$beg' and a.ip <= '$end') " .
+	    "order by a.ip desc limit 1;";
+	undef @res;
+	db_query($sql, \@res);
+	return 'S:No free addresses left in this net' if (!@res);
+	return $res[0][0];
+# 20 = MAC based (Modified EUI-64).
+    } elsif ($ip_policy == 20) {
+	if ($mask <= 64 && $mac =~ /^[\da-f]{12}$/i) {
+	    $tmp1 = sprintf('%02x', hex(substr($mac, 0, 2)) ^ 0x02) .
+		substr($mac, 2, 4) . 'fffe' . substr($mac, 6);
+	    $tmp1 =~ s/(.{4})/:$1/g;
+	    $tmp1 = ipv6compress(substr(ipv6decompress($cidr), 0, 19) . $tmp1);
+	    $sql = "select ip from a_entries a where ip = '$tmp1';";
+	    db_query($sql, \@res);
+	    return $res[0][0] ? 'H:MAC based IPv6 already in use' : $tmp1;
+	} else {
+	    return $mask > 64 ?
+		'S:Unable to create MAC based IPv6 address (netmask longer than 64 bits)' :
+		'H:Unable to create MAC based IPv6 address (missing or invalid MAC)';
+	}
+# 30 = IPv4 based.
+    } elsif ($ip_policy == 30) {
+	if ($mask <= 96 && cidr4ok($old_ip) && is_ip($old_ip) && $old_ip =~ /\./) {
+	    $tmp1 = ipv64unmix(ipv6compress(substr(ipv6decompress($cidr), 0, 30) . $old_ip));
+	    $sql = "select ip from a_entries a where ip = '$tmp1';";
+	    db_query($sql, \@res);
+	    return $res[0][0] ? 'H:IPv4 based IPv6 already in use' : $tmp1;
+	} else {
+	    return $mask > 96 ?
+		'S:Unable to create IPv4 based IPv6 address (netmask longer than 96 bits)' :
+		'H:Unable to create IPv4 based IPv6 address (missing or invalid IPv4)';
+	}
+    }
+}
+
+# Get a list of free ip addresses, one per net, for each net in the
+# same vlan as the given host that fits the user's auth level. ****
+sub get_ip_sugg($$$) {
+    my ($hostid, $serverid, $perms) = @_;
+    my (@row_n, @row_v, $list, $sql, $old_ip, $new_ip, $netname, $cidr, $mac, $ip_policy, $netid, $alevel_n);
+    my $alevel_u = $perms->{alevel};
+
+# Get subnets. Don't care about alevels or permissions.
+    $sql = "select distinct on (n2.netname) " .
+	"n2.netname, n2.net, h.ether, a.ip, n2.ip_policy, n2.id, n2.alevel ".
+	"from a_entries a, vlans v, nets n1, nets n2, hosts h ".
+	"where a.host = $hostid and a.ip << n1.net " .
+	"and n1.server = $serverid and n1.vlan = v.id " .
+	"and v.server = $serverid and v.id = n2.vlan " .
+	"and n2.server = $serverid " .
+	"and a.host = h.id order by n2.netname, a.ip;";
+    db_query($sql, \@row_n);
+    $list = '';
+    for my $ind1 (0..$#row_n) {
+	$mac = $row_n[$ind1][2];
+	$old_ip = $row_n[$ind1][3];
+	$netid = $row_n[$ind1][5];
+	$alevel_n = $row_n[$ind1][6];
+# Show net to user only if alevel and permissions allow.
+	if ($alevel_u >= 998 || $alevel_u >= $alevel_n && (!%{$perms->{net}} || $perms->{net}->{$netid})) {
+	    $netname = $row_n[$ind1][0];
+	    $cidr = $row_n[$ind1][1];
+	    $ip_policy = $row_n[$ind1][4];
+	    $new_ip = get_free_ip_by_net($serverid, $cidr, $mac, $old_ip, $ip_policy);
+	    if (is_ip($new_ip)) {
+		$list .= "<option value='$new_ip'>$netname - $new_ip</option>\n";
+	    }
+	}
+# Get possible virtual nets in each subnet even if user can't see the subnet.
+	$sql = "select netname, net, ip_policy, id, alevel from nets " .
+	    "where dummy = 't' and net << '$cidr' order by netname;";
+	db_query($sql, \@row_v);
+	for my $ind2 (0..$#row_v) {
+	    $netid = $row_v[$ind1][3];
+	    $alevel_n = $row_v[$ind1][4];
+# Show virtual net to user only if alevel and permissions allow.
+	    if ($alevel_u >= 998 || $alevel_u >= $alevel_n && (!%{$perms->{net}} || $perms->{net}->{$netid})) {
+		$netname = $row_v[$ind2][0];
+		$cidr = $row_v[$ind2][1];
+		$ip_policy = $row_v[$ind1][2];
+		$new_ip = get_free_ip_by_net($serverid, $cidr, $mac, $old_ip, $ip_policy);
+		if (is_ip($new_ip)) {
+		    $list .= "<option value='$new_ip'>\n$netname - $new_ip</option>\n";
+		}
+	    }
+	}
+    }
+    if ($list) {
+	$list = "\n<select name='subnetlist'>\n<option value='null'>&lt;Select&gt;</option>\n$list</select>\n";
+    }
+    return $list;
 }
 
 ############################################################################
@@ -3110,6 +3398,7 @@ sub get_who_list($$) {
     $j= sprintf(" %02ds ",$s) if ($m <= 0 && $h <= 0);
     $ip = $q[$i][2];
     $ip =~ s/\/32$//;
+    $ip =~ s/\/128$//; # For IPv6.
     $login_s=localtime($login);
     next unless ($idle < $timeout);
     push @{$lst},[$q[$i][0],$q[$i][1],$ip,$j,$login_s];
@@ -3146,6 +3435,7 @@ sub get_permissions($$) {
   $rec->{groups}='';
 
   undef @q;
+
   $sql = "SELECT a.rtype,a.rref,a.rule,n.range_start,n.range_end " .
 	 "FROM user_rights a, nets n " .
 	 "WHERE ((a.type=2 AND a.ref=$uid) OR (a.type=1 AND a.ref IN (SELECT rref FROM user_rights WHERE type=2 AND ref=$uid AND rtype=0))) " .
@@ -3154,6 +3444,19 @@ sub get_permissions($$) {
 	   "SELECT rtype,rref,rule,NULL,NULL FROM user_rights " .
 	   "WHERE ((ref=$uid AND type=2) OR (type=1 AND ref IN (SELECT rref FROM user_rights WHERE type=2 AND ref=$uid AND rtype=0))) " .
 	   " AND rtype<>3 ORDER BY 1;";
+
+  $sql = "SELECT ur.rtype, ur.rref, ur.rule, n.range_start, n.range_end " .
+      "FROM user_rights ur, nets n " .
+      "WHERE ((ur.type = 2 AND ur.ref = $uid) OR (ur.type = 1 AND ur.ref IN " .
+      "(SELECT rref FROM user_rights WHERE type = 2 AND ref = $uid AND rtype = 0))) " .
+      "AND ur.rtype = 3 AND ur.rref = n.id " .
+      "UNION " .
+      "SELECT rtype, rref, rule, NULL, NULL " .
+      "FROM user_rights " .
+      "WHERE ((ref = $uid AND type = 2) OR (type = 1 AND ref IN " .
+      "(SELECT rref FROM user_rights WHERE type = 2 AND ref = $uid AND rtype = 0))) " .
+      "AND rtype <> 3 ORDER BY 1;";
+
   db_query($sql,\@q);
   #print "<p>$sql\n";
 
@@ -3179,6 +3482,7 @@ sub get_permissions($$) {
     elsif ($type == 11) { push @{$rec->{delmask}},[$ref,$mode]; }
     elsif ($type == 12) { $rec->{rhf}->{$mode}=$ref; }
     elsif ($type == 13) { $rec->{flags}->{$mode}=1; }
+    elsif ($type == 14) { $rec->{defhost}=$mode; }
   }
 
   db_query("SELECT g.name FROM user_groups g, user_rights r " .
@@ -3379,7 +3683,11 @@ sub load_state($$) {
     $state->{'uid'}=$q[0][0];
     $state->{'addr'}=$q[0][1];
     $state->{'addr'} =~ s/\/32\s*$//;
-    $state->{'auth'}='yes' if ($q[0][2] eq 't' || $q[0][2] == 1);
+    $state->{'addr'} =~ s/\/128\s*$//; # For IPv6.
+# The original comparison stopped working, returning 'true' for 'f' == 1,
+# because of 'use bignum;', TVu 18.07.2012.
+#   $state->{'auth'}='yes' if ($q[0][2] eq 't' || $q[0][2] == 1);
+    $state->{'auth'}='yes' if ($q[0][2] eq 't' || $q[0][2] eq '1');
     $state->{'mode'}=$q[0][3];
     if ($q[0][4] > 0) {
       $state->{'serverid'}=$q[0][4];
@@ -3395,7 +3703,10 @@ sub load_state($$) {
     $state->{'searchopts'}=$q[0][11];
     $state->{'searchdomain'}=$q[0][12];
     $state->{'searchpattern'}=$q[0][13];
-    $state->{'superuser'}='yes' if ($q[0][14] eq 't' || $q[0][14] == 1);
+# The original comparison stopped working, returning 'true' for 'f' == 1,
+# because of 'use bignum;', TVu 18.07.2012.
+#   $state->{'superuser'}='yes' if ($q[0][14] eq 't' || $q[0][14] == 1);
+    $state->{'superuser'}='yes' if ($q[0][14] eq 't' || $q[0][14] eq '1');
     $state->{'sid'}=$q[0][15];
 
     db_exec("UPDATE utmp SET last=" . time() . " WHERE cookie='$id';");

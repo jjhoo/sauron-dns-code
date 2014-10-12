@@ -1,7 +1,7 @@
 # Sauron::CGI::Zones.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::Zones;
 require Exporter;
@@ -15,7 +15,7 @@ use Sauron::CGI::Utils;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -41,8 +41,10 @@ my %zone_form = (
   {ftype=>1, tag=>'name', name=>'Zone name', type=>'zonename', len=>60},
   {ftype=>4, tag=>'reversenet', name=>'Reverse net', iff=>['reverse','t']},
   {ftype=>4, tag=>'id', name=>'Zone ID'},
-  {ftype=>1, tag=>'comment', name=>'Comments', type=>'text', len=>60,
-   empty=>1},
+# {ftype=>1, tag=>'comment', name=>'Comments', type=>'text', len=>60,
+  {ftype=>1, tag=>'comment', name=>'Comments', type=>'text', len=>80, maxlen=>200,
+#  empty=>1},
+   empty=>1, anchor=>1 },
   {ftype=>4, tag=>'type', name=>'Type', type=>'enum', conv=>'U',
    enum=>{M=>'Master', S=>'Slave', H=>'Hint', F=>'Forward'}},
   {ftype=>4, tag=>'reverse', name=>'Reverse', type=>'enum',
@@ -56,7 +58,8 @@ my %zone_form = (
    enum=>{in=>'IN (internet)',hs=>'HS',hesiod=>'HESIOD',chaos=>'CHAOS'}},
   {ftype=>2, tag=>'masters', name=>'Masters', type=>['ip','text'], fields=>2,
    len=>[15,45], empty=>[0,1], elabels=>['IP','comment'], iff=>['type','S']},
-  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'domain', len=>30,
+# Len 30 -> 64.
+  {ftype=>1, tag=>'hostmaster', name=>'Hostmaster', type=>'domain', len=>64,
    empty=>1, definfo=>['','Default (from server)'], iff=>['type','M']},
   {ftype=>3, tag=>'chknames', name=>'Check-names', type=>'enum',
    conv=>'U', enum=>\%check_names_enum},
@@ -79,7 +82,8 @@ my %zone_form = (
    iff=>['type','M']},
   {ftype=>1, tag=>'ttl', name=>'Default TTL', type=>'int', len=>10,
    empty=>1, definfo=>['','Default (from server)'], iff=>['type','M']},
-  {ftype=>5, tag=>'ip', name=>'IP addresses (A)', iff=>['type','M'],
+# A -> AAAA for IPv6.
+  {ftype=>5, tag=>'ip', name=>'IP addresses (A/AAAA)', iff=>['type','M'],
    iff2=>['reverse','f']},
   {ftype=>2, tag=>'ns', name=>'Name servers (NS)', type=>['text','text'],
    fields=>2, maxlen=>[64,20],
@@ -113,9 +117,12 @@ my %zone_form = (
    type=>['text','text'], fields=>2, maxlen=>[200,20],
    len=>[50,20], empty=>[0,1], elabels=>['DHCP','comment'], iff=>['type','M']},
 
-  {ftype=>0, name=>'Record info', no_edit=>1},
+# {ftype=>0, name=>'Record info', no_edit=>1},
+  {ftype=>0, name=>'Record info'},
   {ftype=>4, name=>'Record created', tag=>'cdate_str', no_edit=>1},
   {ftype=>4, name=>'Last modified', tag=>'mdate_str', no_edit=>1},
+  {ftype=>1, name=>'Expiration date', tag=>'expiration', len=>30,
+   type=>'expiration', empty=>1},
   {ftype=>4, name=>'Pending host record changes', tag=>'pending_info',
    no_edit=>1, iff=>['type','M']}
  ]
@@ -163,13 +170,34 @@ sub menu_handler {
     $data{server}=$serverid;
     if (param('add_submit')) {
       unless (($res=form_check_form('addzone',\%data,\%new_zone_form))) {
-	if ($data{reverse} eq 't' || $data{reverse} == 1) {
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#	if ($data{reverse} eq 't' || $data{reverse} == 1) {
+	if ($data{reverse} eq 't' || $data{reverse} eq '1') {
+
+# For reverse zone, change IPv6 cidr to ip6.arpa format name. # ****
+#	    if ($data{name} =~ /\/\d{1,3}$/ && (cidr6ok($data{name}) || cidr64ok($data{name}))) {
+	    if ($data{name} =~ /\/\d{1,2}$/ && cidr4ok($data{name}) ||
+	    $data{name} =~ /\/\d{1,3}$/ && (cidr6ok($data{name}) || cidr64ok($data{name}))) {
+		$data{name} = cidr2arpa($data{name});
+	    }
+
 	  my $new_net=arpa2cidr($data{name});
-	  if ($new_net eq '0.0.0.0/0') {
+#	  if ($new_net eq '0.0.0.0/0') {
+	  if ($new_net eq '0.0.0.0/0' or # For IPv6.
+	  ipv6compress(cidr64ok($new_net) ? ipv64unmix($new_net) : $new_net) eq '::/0') {
 	    print h2('Invalid name for reverse zone!');
 	    goto new_zone_edit;
 	  }
 	  $data{reversenet}=$new_net;
+	}
+
+# Check if cidr has been used as forward zone name. ****
+	if (!($data{reverse} eq 't' || $data{reverse} eq '1') &&
+#	    (cidr6ok($data{name}) || cidr64ok($data{name}))) {
+	    is_cidr($data{name})) {
+	    print h2('Invalid name for forward zone!');
+	    goto new_zone_edit;
 	}
 
 	$res=add_zone(\%data);
@@ -190,6 +218,9 @@ sub menu_handler {
           startform(-method=>'POST',-action=>$selfurl),
           hidden('menu','zones'),hidden('sub','add');
     form_magic('addzone',\%data,\%new_zone_form);
+    print 'Tip: The cidr of a forward zone can be used<br>' . # ****
+          'as the name of the corresponding reverse zone.<br>' .
+	  'Mask length must be a multiple of 8 (IPv4) or 4 (IPv6).<br>';
     print submit(-name=>'add_submit',-value=>"Create Zone"),end_form;
     return;
   }
@@ -324,15 +355,15 @@ sub menu_handler {
   my %ztypecolors=(M=>'#c0ffc0',S=>'#eeeeff',F=>'#eedfdf',H=>'#eeeebf');
   my %ztypenames=(M=>'Master',S=>'Slave',F=>'Forward',H=>'Hint');
   my $list=get_zone_list($serverid,0,0);
-  my $zlimit = 50;
+# my $zlimit = 50; # Limit removed.
 
   print startform(-method=>'GET',-action=>$selfurl),
         hidden('menu','zones'),hidden('sub','select'),"Zone display filter: ",
 	textfield(-name=>'select_filter',-size=>20,-maxlength=>80),"  ",
 	submit(-name=>'filter',-value=>'Go'),end_form,
         h2("Select zone:"),
-        ((@{$list} > $zlimit && ! param('select_filter')) ?
-	 "(only first $zlimit zones displayed)":""),
+#       ((@{$list} > $zlimit && ! param('select_filter')) ? # Limit removed.
+#	 "(only first $zlimit zones displayed)":""),
 	p,"<TABLE width=98% bgcolor=white border=0>",
         "<TR bgcolor=\"#aaaaff\">",th(['Zone','Type','Reverse','Comments']);
 
@@ -340,7 +371,10 @@ sub menu_handler {
   for $i (0 .. $#{$list}) {
     my $type=$ztypenames{$$list[$i][2]};
     my $color=$ztypecolors{$$list[$i][2]};
-    my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] == 1) ? 'Yes' : 'No');
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#   my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] == 1) ? 'Yes' : 'No');
+    my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] eq '1') ? 'Yes' : 'No');
     my $id=$$list[$i][1];
     my $name=$$list[$i][0];
     my $comment=$$list[$i][4].'&nbsp;';
@@ -352,8 +386,10 @@ sub menu_handler {
     }
 
     next if ($filter && $name !~ /$filter/);
-    last if ($i >= $zlimit && ! $filter);
+#   last if ($i >= $zlimit && ! $filter); # Limit removed.
 
+# If the comment is an URL, show it as a link.
+    $comment = url2link($comment);
     print "<TR bgcolor=\"$color\">",td([
 	"<a href=\"$selfurl?menu=zones&selected_zone=$name\">$name</a>",
 				    $type,$rev,$comment]);
@@ -376,11 +412,16 @@ sub menu_handler {
       next unless ($type =~ /^[MS]$/);
       $type=$ztypenames{$$list[$i][2]};
       my $color=$ztypecolors{$$list[$i][2]};
-      my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] == 1) ? 'Yes' : 'No');
+# The original comparison stops working, returning 'true' for 'f' == 1,
+# if 'use bignum;' is added (as in some other modules), TVu 18.07.2012.
+#     my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] == 1) ? 'Yes' : 'No');
+      my $rev=(($$list[$i][3] eq 't' || $$list[$i][3] eq '1') ? 'Yes' : 'No');
       my $id=$$list[$i][1];
       my $name=$$list[$i][0];
       my $comment=$$list[$i][4].'&nbsp;';
       next if ($zonelist{$name});
+# If the comment is an URL, show it as a link.
+      $comment = url2link($comment);
       print "<TR bgcolor=$color>",td([$name,$type,$rev,$comment]);
     }
     print "</TABLE><BR>";

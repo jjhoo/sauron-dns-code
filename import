@@ -6,7 +6,8 @@
 # $Id$
 #
 require 5;
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
+use NetAddr::IP; # For IPv6.
 use Getopt::Long;
 use Sauron::DB;
 use Sauron::Util;
@@ -45,7 +46,10 @@ $user = (getpwuid($<))[0];
 $cdate = time;
 %zonedata = {};
 
-$LOOPBACK_NET='127.0.0.0/24' unless ($LOOPBACK_NET);
+# $LOOPBACK_NET='127.0.0.0/24' unless ($LOOPBACK_NET);
+# Should that /24 be /8?
+$LOOPBACK_NET_IPv4 = '127.0.0.0/24' unless ($LOOPBACK_NET_IPv4); # For IPv4.
+$LOOPBACK_NET_IPv6 = '::1/128' unless ($LOOPBACK_NET_IPv6); # For IPv6.
 $LOOPBACK_ZONE='localhost.' unless ($LOOPBACK_ZONE);
 
 db_connect();
@@ -271,17 +275,21 @@ print "server id=$serverid\n" if ($opt_verbose);
 #########################################
 # create zones
 
-$loopback = new Net::Netmask($LOOPBACK_NET);
-$loopback_reverse=($loopback->inaddr())[0];
+# $loopback = new Net::Netmask($LOOPBACK_NET);
+# $loopback_reverse=($loopback->inaddr())[0];
+$loopback_reverse_ipv4 = NetAddr::IP($LOOPBACK_NET_IPv4); # For IPv4.
+$loopback_reverse_ipv6 = NetAddr::IP($LOOPBACK_NET_IPv6); # For IPv6.
 
 # make sure in-adrr.arpa (reverse) zones are processed first
 # (so we can use this information when adding hosts to decide
-#  wheter hosts' A records should have PTR records or not)
+#  wheter hosts' A/AAAA records should have PTR records or not)
 for $i (0..$#zones) {
-  push @zones2, $zones[$i] if ($zones[$i] =~ /\.in-addr\.arpa/);
+# push @zones2, $zones[$i] if ($zones[$i] =~ /\.in-addr\.arpa/);
+  push @zones2, $zones[$i] if ($zones[$i] =~ /\.(in-addr|ip6)\.arpa/); # For IPv6.
 }
 for $i (0..$#zones) {
-  push @zones2, $zones[$i] unless ($zones[$i] =~ /\.in-addr\.arpa/);
+# push @zones2, $zones[$i] unless ($zones[$i] =~ /\.in-addr\.arpa/);
+  push @zones2, $zones[$i] unless ($zones[$i] =~ /\.(in-addr|ip6)\.arpa/); # For IPv6.
 }
 @zones=@zones2;
 
@@ -294,11 +302,16 @@ for ($i=0; $i <= $#zones; $i+=1) {
   $zone =~ s/\.$//g;
   if ($zone =~ /\.$/) { $origin=$zone; } else { $origin = $zone . '.'; }
   $rev='false';
-  $rev='true' if ($zone =~ /\.in-addr\.arpa/);
+# $rev='true' if ($zone =~ /\.in-addr\.arpa/);
+  $rev='true' if ($zone =~ /\.(in-addr|ip6)\.arpa/); For IPv6.
 
   print "zone: '$zone' ";
 
-  if ($zone =~ /$LOOPBACK_ZONE|$loopback_reverse/) {
+# if ($zone =~ /$LOOPBACK_ZONE|$loopback_reverse/) {
+  $revzone = $rev == 'true' ? NetAddr::IP(arpa2cidr($zone)) : ''; # For IPv6.
+  if ($zone =~ /$LOOPBACK_ZONE/ || $revzone ne '' &&
+      ($revzone->within($loopback_reverse_ipv4) ||
+       ($revzone->within($loopback_reverse_ipv6)))) { # For IPv6.
     $loopback = 'true';
     print "loopback ";
   } else {
@@ -411,7 +424,8 @@ for ($i=0; $i <= $#zones; $i+=1) {
 
       if (@{$rec->{PTR}} > 0) {
 	$ip = arpa2cidr($host2 . "." . $origin);
-	next unless ($ip =~ s/\/32$//);
+#	next unless ($ip =~ s/\/32$//);
+	next unless ($ip =~ s/\/32$// or $ip =~ s/\/128$//); # For IPv6.
 	$ipworld{$ip}=[] unless ($ipworld{$ip});
 	for $j (0..$#{$rec->{PTR}}) {
 	  push @{$ipworld{$ip}}, $rec->{PTR}->[$j];
@@ -529,7 +543,8 @@ for ($i=0; $i <= $#zones; $i+=1) {
     $hosttype=8 if (@{$rec->{SRV}} > 0);
 
     if ($hosttype == 2) {
-      if ($host =~ /in-addr\.arpa/) {
+#     if ($host =~ /in-addr\.arpa/) {
+      if ($host =~ /(in-addr|ip6)\.arpa/) { # For IPv6.
 	print STDERR "\nIGNORING reverse delegation $host in zone $zone \n",
                      " (reverse mapping stuff should be in in-arpa zone)\n";
 	delete $zonedata{$host};
@@ -629,7 +644,7 @@ for ($i=0; $i <= $#zones; $i+=1) {
 
 
 
-  # add A records in a_entries
+  # add A/AAAA records in a_entries
 
   print STDERR "+";
   undef @ilist;
@@ -639,13 +654,13 @@ for ($i=0; $i <= $#zones; $i+=1) {
     $hostid=($host eq $origin ? $zonehostid : $rec->{ID});
 
     if (@{$rec->{A}} < 1) {
-      warn("unexpected host without A records found '$host'")
+      warn("unexpected host without A/AAAA records found '$host'")
 	if (@{$rec->{NS}} < 1  &&  @{$rec->{MX}} < 1 && @{$rec->{SRV}} < 1);
       next;
     }
 
     unless ($hostid > 0) {
-      warn("no id found in hash for host $host (while adding A records)!") ;
+      warn("no id found in hash for host $host (while adding A/AAAA records)!") ;
       next;
     }
 
@@ -662,7 +677,7 @@ for ($i=0; $i <= $#zones; $i+=1) {
     }
 
   }
-  fatal("cannot insert A records")
+  fatal("cannot insert A/AAAA records")
     if (db_insert('a_entries','host,ip,reverse,forward',\@ilist) < 0);
 
 

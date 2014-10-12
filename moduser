@@ -27,7 +27,7 @@ $mdate = time;
 
 %addmodes=('group'=>0,'server'=>1,'zone'=>2,'net'=>3,'hostmask'=>4,'ipmask'=>5,
 	   'level'=>6,'elimit'=>7,'defdept'=>8,'tmplmask'=>9,
-	   'grpmask'=>10,'delmask'=>11,'rhf'=>12,'flag'=>13);
+	   'grpmask'=>10,'delmask'=>11,'rhf'=>12,'flag'=>13,'defhost'=>14);
 
 %masktypes=(4=>'Hostmask',9=>'Template',10=>'Group',11=>'Delete');
 
@@ -99,7 +99,8 @@ sub list_privs($$) {
 	   "WHERE a.rtype=5 AND a.ref=$id AND a.type=$utype ORDER BY id",\@d);
   for $i (0..$#d) {
     $d[$i][0] =~ s/\s+$//;
-    printf "%-6s %-8s %-25s %s\n",$d[$i][1],"IP-mask",$d[$i][0],
+#   printf "%-6s %-8s %-25s %s\n",$d[$i][1],"IP-mask",$d[$i][0],
+    printf "%-6s %-8s %s %s\n",$d[$i][1],"IP-mask",$d[$i][0], # For IPv6.
       "(IP constraint)";
   }
 
@@ -125,6 +126,14 @@ sub list_privs($$) {
     $d[$i][0] =~ s/\s+$//;
     printf "%-6s %-8s %-25s %s\n",$d[$i][1],"DefDept",$d[$i][0],
       "(default department string)";
+  }
+
+  db_query("SELECT a.rule,a.id  FROM user_rights a " .
+	   "WHERE a.rtype=14 AND a.ref=$id AND a.type=$utype ORDER BY id",\@d);
+  for $i (0..$#d) {
+    $d[$i][0] =~ s/\s+$//;
+    printf "%-6s %-8s %-25s %s\n",$d[$i][1],"DefHost",$d[$i][0],
+      "(default hostname template)";
   }
 
   db_query("SELECT a.rule,a.id  FROM user_rights a " .
@@ -175,13 +184,15 @@ sub list_privs($$) {
 
 ##############################################
 
-GetOptions("help|h","list!","add:s","delall!","del=s","passwd:s",
+# GetOptions("help|h","list!","add:s","delall!","del=s","passwd:s",
+GetOptions("help|h","list:s","add:s","delall!","del=s","passwd:s", # ****
 	   "name=s","superuser=s","lock!","unlock!","edit!",
 	   "email=s","comment=s","expiration=s");
 
 $opt_user=$ARGV[0];
 
-if ($opt_help || ($opt_user eq '' &&  $opt_list eq '')) {
+# if ($opt_help || ($opt_user eq '' &&  $opt_list eq '')) {
+if ($opt_help || ($opt_user eq '' && !defined $opt_list)) {
   print "syntax: $0 <$fooname> [options]\n\n";
   print " Option descriptions: \n";
 
@@ -200,8 +211,10 @@ if ($opt_help || ($opt_user eq '' &&  $opt_list eq '')) {
   # "groups in groups" not done yet ...
   print "   --list                                list all groups\n"
       if ($modgroup);
+  print "   --list=\"members,<groupname>\"          list users in group\n"
+      if ($modgroup);
 
-  print "                                         Priviliges\n",
+  print "                                         Privileges\n",
         "   --add                                 interactive add\n";
   print	"   --add=\"group,<groupname>\"             add group membership\n" 
       unless ($modgroup);
@@ -216,7 +229,10 @@ if ($opt_help || ($opt_user eq '' &&  $opt_list eq '')) {
         "   --add=\"ipmask,<ipmask>\"               add IP-mask\n",
         "   --add=\"level,<level>\"                 add priv.level\n",
         "   --add=\"elimit,<days>\"                 add expiration limit\n",
-        "   --add=\"def_dept,<string>\"             add default dept for hosts\n",
+        "   --add=\"defdept,<string>\"              add default dept for hosts\n",
+        "   --add=\"defhost,<template>\"            add default name for new hosts\n",
+        "                                         use %{id} to include host id in host name\n",
+        "                                         e.g. h%{id}.exam -> h12045.exam\n",
         "   --add=\"tmplmask,<regex>\"              add Template-mask\n",
         "   --add=\"grpmask,<regex>\"               add Group-mask\n",
         "   --add=\"delmask,<regex>\"               add global Host delete mask\n",
@@ -240,17 +256,41 @@ $opt_edit = ($opt_edit ? 1 : 0);
 db_connect();
 db_debug(0);
 
-if ($opt_list) {
+if (defined $opt_list) {
   if ($modgroup) {
-    print "Name                                     Comments\n";
-    print "---------------------------------------- ----------------------\n";
-    undef @q;
-    db_query("SELECT id,name,comment FROM user_groups ORDER BY name;",\@q);
-    for $i (0..$#q) {
-      printf "%-40s %-20s\n", $q[$i][1],$q[$i][2];
-    }
+      if ($opt_list ne '') { # ****
+	  if ($opt_list =~ /^members,(\S+)$/) {
+	      $sql = "select u.username, u.name, u.email, u.superuser " .
+		  "from user_groups ug, user_rights ur, users u " .
+		  "where ug.name = '$1' and ug.id = ur.rref and ur.rtype = 0 " .
+		  "and ur.type = 2 and ur.ref = u.id order by username;";
+	      undef @q;
+	      db_query($sql, \@q);
+	      print "Members of user group $1\n\n";
+	      print "Login      Name                      Email                     Superuser\n";
+	      print "---------- ------------------------- ------------------------- ---------\n";
+	      for $i (0..$#q) {
+		  printf "%-10s %-25s %-25s %-5s\n", $q[$i][0], substr($q[$i][1], 0, 25),
+		  substr($q[$i][2], 0, 25), ($q[$i][3] =~ /^(t|1)$/ ? 'Yes' : '');
+	      }
+	  } else {
+	      fatal("Bad parameters for --list");
+	  }
+	  exit 0;
+      }
+      print "Name                                     Comments\n";
+      print "---------------------------------------- ----------------------\n";
+      undef @q;
+      db_query("SELECT id,name,comment FROM user_groups ORDER BY name;",\@q);
+      for $i (0..$#q) {
+	  printf "%-40s %-20s\n", $q[$i][1],$q[$i][2];
+      }
   }
   else {
+      if ($opt_list ne '') { # ****
+	  print "No parameters allowed for --list\n";
+	  exit 0;
+      }
     print 
      "Login      Group      Name                      Email                  Superusr\n",
      "---------- ---------- ------------------------- ---------------------- --------\n";
@@ -433,13 +473,13 @@ unless (defined $opt_add || defined $opt_del || defined $opt_delall) {
     "ID     Type     Ref.                      Mode\n",
     "------ -------- ------------------------- --------------------------------\n";
 
-  print "[User priviliges]\n" if ($utype == 2);
+  print "[User privileges]\n" if ($utype == 2);
   list_privs($id,$utype);
   print "\n";
 
   if ($utype == 2) {
     for $i (0..$#groups) {
-      printf "%-6d [Group (%s) priviliges]\n", $groups[$i][2],$groups[$i][1];
+      printf "%-6d [Group (%s) privileges]\n", $groups[$i][2],$groups[$i][1];
       list_privs($groups[$i][0],1);
     }
   }
@@ -455,7 +495,7 @@ if (defined $opt_add) {
       "0=", ($modgroup ? "exit" : "group"),
       ",1=server,2=zone,3=net,4=hostmask,5=IP-mask,6=priv.level\n",
       "\t\t7=elimit,8=defdept,9=Template-mask,10=Group-mask,11=Delete-mask\n",
-      "\t\t12=ReqHostField,13=Flag\n",
+      "\t\t12=ReqHostField,13=Flag,14=defhost\n",
       "Record type: ";
     chomp($type = <STDIN>);
     unless ($type ne '' && $type >= 0 && $type <=13) {
@@ -539,7 +579,8 @@ if (defined $opt_add) {
       $ref=-1;
     }
     elsif ($type==5) {
-      print "Enter IP mask (eg 192.162.1-2.*, 192.162.1-2.10-254): ";
+      print "Enter IP mask (eg 192.162.1-2.*, 192.162.1-2.10-254\n" .
+	  "or 2001:add:beef:3c0-3df:*:*:*:*): "; # For IPv6.
       chomp($tmp = <STDIN>);
       unless (check_ipmask($tmp,'')==1) {
 	  print "invalid IP-mask!\n"; goto add_i;
@@ -550,7 +591,7 @@ if (defined $opt_add) {
     elsif ($type==6) {
       print "Enter Privilege Level (0-999): ";
       chomp($tmp = <STDIN>);
-      unless (($tmp =~ /^\d+$/) && ($tmp < 999)) {
+      unless (($tmp =~ /^\d+$/) && ($tmp <= 999)) {
 	  print "invalid level\n"; goto add_i;
       }
       $mode=$tmp;
@@ -603,16 +644,26 @@ if (defined $opt_add) {
       $mode=$tmp;
       $ref=-1;
     }
+    elsif ($type==14) {
+      print "Enter template for new hosts: ";
+      chomp($tmp = <STDIN>);
+      $tmp =~ s/\s+//g;
+      $tmp=lc($tmp);
+      $mode=$tmp;
+      $ref=-1;
+    }
 
     $mode=db_encode_str($mode);
     $res=db_exec("INSERT INTO user_rights (type,ref,rtype,rref,rule) " .
-		 "VALUES($utype,$id,$type,$ref,$mode);");
+#		 "VALUES($utype,$id,$type,$ref,$mode);");
+#		 "VALUES($utype,$id,$type,$ref,E'$mode');"); # Escape syntax to handle backslashes.
+		 "VALUES($utype,$id,$type,$ref,'$mode');");
     fatal("cannot insert record to user_rights table!") if ($res < 0);
     exit;
   }
 
   fatal("invalid parameter '$opt_add' for add option!")
-    unless ($opt_add =~ /^(group|server|zone|net|hostmask|ipmask|level|elimit|defdept|tmplmask|grpmask|delmask|rhf|flag),([^,\s]+)(,(\S+))?$/);
+    unless ($opt_add =~ /^(group|server|zone|net|hostmask|ipmask|level|elimit|defdept|defhost|tmplmask|grpmask|delmask|rhf|flag),([^,\s]+)(,(\S+))?$/);
   $type=$addmodes{$1};
   $tmp=$2;
   $mode=$4;
@@ -689,7 +740,7 @@ if (defined $opt_add) {
   }
   elsif ($type==6) {
     fatal("invalid level '$tmp'!")
-	unless (($tmp =~ /^\d+$/) && ($tmp < 999));
+	unless (($tmp =~ /^\d+$/) && ($tmp <= 999));
     $mode=$tmp;
     $ref=-1;
   }
@@ -719,10 +770,18 @@ if (defined $opt_add) {
     $mode=$1;
     $ref=-1;
   }
+  elsif ($type==14) {
+    $tmp =~ s/\s//g;
+#   fatal("invalid default department '$tmp'") unless (length($tmp) > 0);
+    $mode=$tmp;
+    $ref=-1;
+  }
 
   $mode=db_encode_str($mode);
   $res=db_exec("INSERT INTO user_rights (type,ref,rtype,rref,rule) " .
-	       "VALUES($utype,$id,$type,$ref,$mode);");
+#	       "VALUES($utype,$id,$type,$ref,$mode);");
+#	       "VALUES($utype,$id,$type,$ref,E'$mode');"); # Escape syntax to handle backslashes.
+	       "VALUES($utype,$id,$type,$ref,'$mode');");
   fatal("cannot insert record to user_rights table!") if ($res < 0);
   print "Record successfully inserted.\n";
 }

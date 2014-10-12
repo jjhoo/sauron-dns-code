@@ -1,7 +1,7 @@
 # Sauron::UtilDhcp.pm - ISC DHCPD config file reading/parsing routines
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi> 2002.
-# $Id$
+# $Id:$
 #
 package Sauron::UtilDhcp;
 require Exporter;
@@ -10,7 +10,7 @@ use Sauron::Util;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(process_dhcpdconf);

@@ -206,7 +206,9 @@ $DB_PASSWORD = "bar";
 # $SAURON_BGCOLOR="white";
 # $SAURON_FGCOLOR="black";
 
-# $LOOPBACK_NET = "127.0.0.0/24";
+# $LOOPBACK_NET_IPv4 = '127.0.0.0/8'; # For IPv4.
+# $LOOPBACK_NET_IPv6 = '::1/128';     # For IPv6.
+
 # $LOOPBACK_ZONE = "loopback.";
 
 1;

@@ -21,7 +21,8 @@
 #       MUUTA[0-9]      <other information about machine>
 #
 require 5;
-use Net::Netmask;
+# use Net::Netmask;
+use NetAddr::IP; # For IPv6.
 use Getopt::Std;
 use Sauron::DB;
 use Sauron::Util;
@@ -190,10 +191,16 @@ foreach $net (keys %rhash) {
   $rec=$rhash{$net};
   $rec2=$zonedata{$rec->{NAME}};
 
-  $nm = new Net::Netmask($net,$rec->{MASK});
-  $n = $nm->desc();
-  $range1 = $nm->nth(1);
-  $range2 = $nm->nth(-2);
+#  $nm = new Net::Netmask($net,$rec->{MASK});
+#  $n = $nm->desc();
+#  $range1 = $nm->nth(1);
+#  $range2 = $nm->nth(-2);
+
+# For IPv6.
+  $nm = new NetAddr::IP($net,$rec->{MASK});
+  $n = $nm->cidr();
+  $range1 = $nm->first()->addr();
+  $range2 = $nm->last()->addr();
 
   undef @q;
   foreach $rtmp (@{$rec2->{DHCP}}) {

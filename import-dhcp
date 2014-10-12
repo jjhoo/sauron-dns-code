@@ -6,7 +6,8 @@
 # $Id$
 #
 require 5;
-use Net::Netmask;
+# use Net::Netmask;
+use NetAddr::IP; # For IPv6.
 use Getopt::Long;
 use Sauron::DB;
 use Sauron::Util;
@@ -123,9 +124,12 @@ foreach $key (sort keys %{$data{subnet}}) {
     next;
   }
 
-  $nh = new2 Net::Netmask($net,$mask);
-  fatal("invalid subnet: $key") unless ($nh);
-  $cidr=$nh->desc();
+# $nh = new2 Net::Netmask($net,$mask);
+# fatal("invalid subnet: $key") unless ($nh);
+# $cidr=$nh->desc();
+  fatal("invalid subnet: $key") unless cidrok($net . '/' . $mask); # For IPv6.
+  $nh = new NetAddr::IP($net . '/' . $mask); # For IPv6.
+  $cidr=$nh->cidr(); # For IPv6.
   $netcounter++;
   $name="net-$netcounter";
 
@@ -204,8 +208,10 @@ foreach $key (keys %{$data{host}}) {
     next if ($line =~ /^\s*option\s+domain-name\s+/);
     if ($line =~ /^\s*fixed\-address\s+(\S.*)\s*$/) {
       $tmp =$1;
-      if ($tmp =~ /^\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$/) {
-	$ip=$1;
+#     if ($tmp =~ /^\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*$/) {
+      if (is_ip($tmp)) { # For IPv6, "\s*"s not needed as $tmp already excludes whitespace.
+#	$ip=$1;
+	$ip=$tmp; # For IPv6.
       } else {
 	print "Ignoring host with multiple IPs: $key\n";
 	next;

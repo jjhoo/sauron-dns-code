@@ -1,7 +1,7 @@
 # Sauron::CGI::Nets.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::Nets;
 require Exporter;
@@ -12,10 +12,14 @@ use Sauron::CGIutil;
 use Sauron::BackEnd;
 use Sauron::Sauron;
 use Sauron::CGI::Utils;
+# use Net::Netmask; # Not used for IPv6.
+use Net::IP; # For IPv6.
+use NetAddr::IP; # For IPv6.
+use bignum; # For IPv6.
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -33,7 +37,8 @@ my %new_net_form=(
    enum=>{t=>'Subnet',f=>'Net'}},
   {ftype=>4, tag=>'dummy', name=>'Virtual subnet', type=>'enum',
    enum=>{t=>'Yes',f=>'No'},iff=>['subnet','t',1]},
-  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr'},
+# Len added for IPv6.
+  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr', len=>43},
   {ftype=>1, tag=>'comment', name=>'Comment', type=>'text',
    len=>60, empty=>1}
  ]
@@ -51,7 +56,8 @@ my %net_form=(
    enum=>{t=>'Subnet',f=>'Net'}},
   {ftype=>3, tag=>'dummy', name=>'Virtual subnet', type=>'enum',
    enum=>{t=>'Yes',f=>'No'},iff=>['subnet','t',1]},
-  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr'},
+# Len added for IPv6.
+  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr', len=>43},
   {ftype=>3, tag=>'vlan', name=>'VLAN', type=>'enum', conv=>'L',
    enum=>\%vlan_list_hash, elist=>\@vlan_list_lst, restricted=>1,
    iff=>['dummy','f']},
@@ -62,10 +68,15 @@ my %net_form=(
   {ftype=>1, tag=>'comment', name=>'Comment', type=>'text',
    len=>60, empty=>1},
   {ftype=>0, name=>'Auto assign address range', iff=>['subnet','t']},
+# Len added for IPv6.
   {ftype=>1, tag=>'range_start', name=>'Range start', type=>'ip', 
-   empty=>1, iff=>['subnet','t']},
+   empty=>1, iff=>['subnet','t'], len=>39},
+# Len added for IPv6.
   {ftype=>1, tag=>'range_end', name=>'Range end', type=>'ip',
-   empty=>1, iff=>['subnet','t']},
+   empty=>1, iff=>['subnet','t'], len=>39},
+  {ftype=>3, tag=>'ip_policy', name=>'IP address assignment policy', type=>'enum', # ****
+   enum=>{0=>'Lowest free', 10=>'Highest free', 20=>'MAC based', 30=>'IPv4 based'},
+   ip_type_sensitive=>1, iff=>['subnet','t']},
   {ftype=>0, name=>'DHCP',iff=>['dummy','f']},
   {ftype=>3, tag=>'no_dhcp', name=>'DHCP', type=>'enum', conv=>'L',
    enum=>{f=>'Enabled',t=>'Disabled'},iff=>['dummy','f']},
@@ -149,11 +160,12 @@ my %new_vlan_form=(
 my %net_info_form=(
  data=>[
   {ftype=>0, name=>'Net'},
-  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr'},
-  {ftype=>1, tag=>'base', name=>'Base', type=>'cidr'},
-  {ftype=>1, tag=>'netmask', name=>'Netmask', type=>'cidr'},
-  {ftype=>1, tag=>'hostmask', name=>'Hostmask', type=>'cidr'},
-  {ftype=>1, tag=>'broadcast', name=>'Broadcast address', type=>'cidr'},
+# Len added for IPv6 (5 items).
+  {ftype=>1, tag=>'net', name=>'Net (CIDR)', type=>'cidr', len=>43},
+  {ftype=>1, tag=>'base', name=>'Base', type=>'cidr', len=>43},
+  {ftype=>1, tag=>'netmask', name=>'Netmask', type=>'cidr', len=>43},
+  {ftype=>1, tag=>'hostmask', name=>'Hostmask', type=>'cidr', len=>43},
+  {ftype=>1, tag=>'broadcast', name=>'Broadcast address', type=>'cidr', len=>43},
   {ftype=>1, tag=>'size', name=>'Size', type=>'int'},
   {ftype=>0, name=>'Usable address range'},
   {ftype=>1, tag=>'first', name=>'Start', type=>'int'},
@@ -169,14 +181,13 @@ my %net_info_form=(
 );
 
 
-
 # NETS menu
 #
 sub menu_handler {
   my($state,$perms) = @_;
 
   my(@q,$i,$res,$comment,$netname,$vlan,$type,$name,$dhcp,$ip,$info,$novlans);
-  my (%data,%net,%vlan,,%vmps,%nmaphash,%netmap);
+  my (%data,%net,%vlan,,%vmps,%nmaphash,%netmap,%netunion,@netmap6);
   my (@vlan_list,@pingsweep,@iplist,@pingiplist,@blocks);
 
   my $serverid = $state->{serverid};
@@ -401,9 +412,6 @@ sub menu_handler {
     return;
   }
   elsif ($sub eq 'Net Info') {
-    my $si;
-    my $sta;
-    my $nstate;
 
     if (($id < 0) || get_net($id,\%net)) {
       alert2("Cannot get net record (id=$id)");
@@ -417,62 +425,121 @@ sub menu_handler {
     $net{inuse}=@q;
     for $i (0..$#q) {
       $ip=$q[$i][0]; $ip=~s/\/32$//;
-      $netmap{$ip}=1;
+      $ip=~s/\/128$//; # For IPv6.
+      push @netmap6, $ip;
       $net{gateways}.="$q[$i][0] " . ($q[$i][2] ? "($q[$i][2])":'') .
 	              "<br>" if ($q[$i][1] > 0);
     }
 
-    my $netmask = new Net::Netmask($net{net});
-    $net{base}=$netmask->base();
-    $net{netmask}=$netmask->mask();
-    $net{hostmask}=$netmask->hostmask();
-    $net{broadcast}=$netmask->broadcast();
-    $net{size}=$netmask->size();
-    $net{first}=$netmask->nth(1);
-    $net{last}=$netmask->nth(-2);
-    $net{ssize}=$netmask->size()-2;
+    my $netmask = new NetAddr::IP($net{net});
+    $net{base}=ipv6compress(lc($netmask->addr()));
+    $net{netmask}=ipv6compress(lc($netmask->mask()));
+    my $tmpip = $net{netmask};
+    $tmpip =~ s+/.*$++;
+    $net{hostmask} = '';
+# For IPv4.
+    if (cidr4ok($net{net})) {
+	$tmpip = Net::IP::ip_iptobin($tmpip, 4);
+	$tmpip =~ tr/01/10/;
+	$net{hostmask} = Net::IP::ip_bintoip($tmpip, 4);
+    }
+# For IPv6.
+    if (cidr6ok($net{net})) {
+	$tmpip = Net::IP::ip_iptobin(ipv6decompress($tmpip), 6);
+	$tmpip =~ tr/01/10/;
+	$net{hostmask} = ipv6compress(Net::IP::ip_bintoip($tmpip, 6));
+    }
+    $net{broadcast}=ipv6compress(lc($netmask->broadcast()->addr()));
+    $net{size}=$netmask->num() + 2;
+    $net{first}=ipv6compress(lc($netmask->first()->addr()));
+    $net{last}=ipv6compress(lc($netmask->last()->addr()));
+    $net{ssize}=$netmask->num();
     $net{inusep}=sprintf("%3.0f", ($net{inuse} / $net{size})*100) ."%";
 
-    $sta=($netmap{$net{first}} > 0 ? 1 : 0);
-    $si=1;
-    for $i (1..($netmask->size()-1)) {
-      $ip=$netmask->nth($i);
-      $nstate=($netmap{$ip} > 0 ? 1 : 0);
-      if ($nstate != $sta) {
-	push @blocks, [$sta,($i-$si),$netmask->nth($si),$netmask->nth($i-1)];
-	$si=$i;
-      }
-      $sta=$nstate;
+# For IPv6.
+    my $first = ip2int($net{first}); # First address of subnet.
+    my $last = ip2int($net{last}); # Last address of subnet.
+    my $begin = -1;
+    my $end = $first - 1; # Value needed if there are no used addresses.
+    my $previous;
+    for $i (@netmap6) {
+# First used address.
+	if ($begin == -1) {
+	    $begin = $end = $previous = ip2int($i);
+# Non-first address of a used block.
+	} elsif (ip2int($i) <= $previous + 1) {
+	    $end = $previous = ip2int($i);
+# First address of a non-first used block.
+	} else {
+# Previous free block.
+	    if ($begin != $first) {
+		push @blocks, [ 0, $begin - $first, int2ip($first), int2ip($begin - 1) ];
+	    }		 
+# First address of the free block before this used block.
+	    $first = $end + 1;
+# Previous used block.
+	    push @blocks, [ 1, $end - $begin + 1, int2ip($begin), int2ip($end) ];
+# Begin new used block.
+	    $begin = $end = $previous = ip2int($i);
+	}
     }
-    $i=$netmask->size()-1;
-    push( @blocks, [$sta,($i-$si),$netmask->nth($si),$netmask->nth($i-1)] )
-      if ($si < $i);
+# Unused block, if any, before last used block, if any.
+    if ($begin != -1 && $begin != $first) {
+	push @blocks, [ 0, $begin - $first, int2ip($first), int2ip($begin - 1) ];
+    }
+# Last used block, if there were addresses in use.
+    if ($begin != -1) {
+	push @blocks, [ 1, $end - $begin + 1, int2ip($begin), int2ip($end) ];
+    }
+# Unused block, if any, after last used block, if any,
+# or all usable addresses if no addresses were in use.
+    if ($end != $last) {
+	push @blocks, [ 0, ip2int($net{last}) - $end, int2ip($end + 1),
+			ipv6compress($net{last}) ];
+    }
 
     print "<TABLE width=\"100%\"><TR><TD valign=\"top\">";
 
     display_form(\%net,\%net_info_form);
     print p,startform(-method=>'GET',-action=>$selfurl),
           hidden('menu','nets'),
-          submit(-name=>'sub',-value=>'<-- Back'),
-          hidden('net_id',$id),end_form;
-
-    print "</TD><TD valign=\"top\">";
+          submit(-name=>'sub',-value=>'<-- Back'),'<br>',
+          hidden('net_id',$id),end_form,"</TD>\n";
+    if ($net{subnet} eq 't' && cidr6ok($net{net})) { # For IPv6.
+	print "<TR>";
+    }
+    print "<TD valign=\"top\">";
 
     if ($net{subnet} eq 't') {
+      if (cidr6ok($net{net})) { print '<br>'; } # For IPv6.
       print "<TABLE cellspacing=0 cellpadding=3 border=0 bgcolor=\"eeeeef\">",
           "<TR><TH colspan=3 bgcolor=\"#ffffff\">Net usage map</TH></TR>",
 	  "<TR bgcolor=\"#aaaaff\">",td("Size"),td("Start"),td("End"),"</TR>";
-      $sta=0;
-      $sta=1 if ($q[0][0] =~ /^($net{first})(\/32)?/);
       for $i (0..$#blocks) {
-	if ($blocks[$i][0] == 1) { print "<TR bgcolor=\"#00ff00\">"; }
-	else { print "<TR bgcolor=\"#eeeebf\">"; }
-	print td("$blocks[$i][1] &nbsp;"),td($blocks[$i][2]),
-	  td($blocks[$i][3]),"</TR>";
+# Colors reversed.
+#	if ($blocks[$i][0] == 1) { print "<TR bgcolor=\"#00ff00\">"; }
+#	else { print "<TR bgcolor=\"#eeeebf\">"; }
+	if ($blocks[$i][0] == 1) { print "<TR bgcolor=\"#eeeebf\">"; }
+	else { print "<TR bgcolor=\"#00ff00\">"; }
+
+#	print td("$blocks[$i][1] &nbsp;"),td($blocks[$i][2]),
+#	  td($blocks[$i][3]),"</TR>";
+
+	if ($blocks[$i][1] < 1e6) { # For IPv6.
+	    print td("$blocks[$i][1] &nbsp;");
+	} else {
+#	    print td(sprintf('~10^%02.f', log($blocks[$i][1])/log(10)) . " &nbsp;");
+	    print td(sprintf('~10<sup>%.0f</sup>', log($blocks[$i][1])/log(10)) . " &nbsp;");
+	}
+	print td($blocks[$i][2]), td($blocks[$i][3]),"</TR>\n";
       }
       print "<TR><TH colspan=3 bgcolor=\"#aaaaff\">&nbsp;</TH></TR></TABLE>";
-      print p,"Legend: <TABLE><TR bgcolor=\"#00ff00\"><TD>in use</TD></TR>",
-	    "<TR bgcolor=\"#eeeebf\"><TD>unused</TD></TR></TABLE>";
+      print p,"<TABLE><TR><TH colspan=3 bgcolor=\"#ffffff\">Legend:</TH></TR>",
+# Colors reversed.
+#     "<TR bgcolor=\"#00ff00\"><TD>In use</TD></TR>",
+#     "<TR bgcolor=\"#eeeebf\"><TD>Unused</TD></TR></TABLE>";
+      "<TR bgcolor=\"#eeeebf\"><TD>In use</TD></TR>",
+      "<TR bgcolor=\"#00ff00\"><TD>Unused</TD></TR></TABLE>";
     }
 
     print "</TD></TR></TABLE>";
@@ -500,14 +567,19 @@ sub menu_handler {
 	       " AND a.ip << '$net{net}' ORDER BY a.ip",\@q);
       undef %netmap;
       for $i (0..$#q) { $netmap{$q[$i][2]}=$q[$i]; }
-      @iplist = net_ip_list($net{net});
-      for $i (0..$#iplist) {
+#     @iplist = net_ip_list($net{net});
+      undef %netunion;                                       # For IPv6.
+      for $i (keys %nmaphash) { $netunion{ip2int($i)} = 1; } # For IPv6.
+      for $i (keys %netmap) { $netunion{ip2int($i)} = 1; }   # For IPv6.
+#     for $i (0..$#iplist) {
+      for $i (sort { $a <=> $b } keys %netunion) {           # For IPv6.
 	my $status;
 	my $domain;
 	my $hid;
 
-	$ip=$iplist[$i];
-	next unless ($nmaphash{$ip} || $netmap{$ip});
+#	$ip=$iplist[$i];
+	$ip=int2ip($i);                                      # For IPv6.
+#	next unless ($nmaphash{$ip} || $netmap{$ip});
 	$hid=$netmap{$ip}->[0];
 	if ($nmaphash{$ip} =~ /^Up/) {
 	  $status="<font color=\"green\">UP</font>";
@@ -586,15 +658,61 @@ sub menu_handler {
     $novlans=0;
   }
 
+  my $listmode = param('list');
+  my @path;
+# push @path, '0.0.0.0/0';
+  push @path, '::/0'; # For IPv6.
+
+# Write CSV list with the same content as the web page.
+  if (param('csv')) {
+      print print_csv(["Net", "NetName", "Description", "Type",
+		       "DHCP", "VLAN", "Level"], 1) . "\n";
+      for $i (0..$#q) {
+	  if ($listmode =~ /^(sub|)$/) {
+	      next if ($q[$i][9] =~ /(t|1)/);
+	  }
+	  if ($listmode =~ /^\s*$/) {
+	      next if ($q[$i][3] =~ /(t|1)/);
+	  }
+
+	  my $parent = $path[-1];
+	  if (is_cidr_within_cidr($q[$i][2],$parent)) {
+	      push @path, $q[$i][2];
+	  } else {
+	      do {
+		  pop @path;
+		  $parent = $path[-1];
+	      } while (@path > 0 && not is_cidr_within_cidr($q[$i][2],$parent));
+	      push @path, $q[$i][2];
+	  }
+
+	  $dhcp=(($q[$i][5] eq 't' || $q[$i][5] eq '1') ? 'No' : 'Yes' );
+	  if ($q[$i][3] =~ /(1|t)/) {
+	      if ($q[$i][9] =~ /(1|t)/) {
+		  $type='Virtual';
+	      } else {
+		  $type='Subnet';
+	      }
+	  } else {
+	      $type='Net';
+	  }
+
+	  my $spacer = "   " x ($#path - 1);
+
+	  $vlan = ($q[$i][6] > 0 ? $vlan_list_hash{$q[$i][6]} : '');
+	  $netname = ($q[$i][7] eq '' ? '' : $q[$i][7]);
+	  $name = ($q[$i][1] eq '' ? '' : $q[$i][1]);
+	  print print_csv([$spacer . $q[$i][2], $netname, $name, $type, $dhcp,
+			    ($novlans ? '' : $vlan), $q[$i][8]], 1) . "\n";
+      }
+      return;
+  }
+
   print "<TABLE bgcolor=\"#ccccff\" width=\"99%\" cellspacing=1 " .
         " cellpadding=1 border=0>",
         "<TR bgcolor=\"#aaaaff\">",
         th("Net"),th("NetName"),th("Description"),th("Type"),
         th("DHCP"),($novlans?'':th("VLAN")),th("Lvl"),"</TR>";
-
-  my @path;
-  push @path, '0.0.0.0/0';
-  my $listmode = param('list');
 
   for $i (0..$#q) {
     if ($listmode =~ /^(sub|)$/) {
@@ -615,8 +733,10 @@ sub menu_handler {
       push @path, $q[$i][2];
     }
 
-
-    $dhcp=(($q[$i][5] eq 't' || $q[$i][5] == 1) ? 'No' : 'Yes' );
+# The original comparison stopped working, returning 'true' for 'f' == 1,
+# because of 'use bignum;', TVu 18.07.2012.
+#   $dhcp=(($q[$i][5] eq 't' || $q[$i][5] == 1) ? 'No' : 'Yes' );
+    $dhcp=(($q[$i][5] eq 't' || $q[$i][5] eq '1') ? 'No' : 'Yes' );
     if ($q[$i][3] =~ /(1|t)/) {
       if ($q[$i][9] =~ /(1|t)/) {
 	print "<TR bgcolor=\"#bfeeee\">";
@@ -631,7 +751,7 @@ sub menu_handler {
       $type='Net';
     }
 
-    my $spacer = "&nbsp;&nbsp;&nbsp;" x ($#path -1);
+    my $spacer = "&nbsp;&nbsp;&nbsp;" x ($#path - 1);
     $vlan=($q[$i][6] > 0 ? $vlan_list_hash{$q[$i][6]} : '&nbsp;');
     $netname=($q[$i][7] eq '' ? '&nbsp;' : $q[$i][7]);
     $name=($q[$i][1] eq '' ? '&nbsp;' : $q[$i][1]);
@@ -647,10 +767,16 @@ sub menu_handler {
   }
 
   print "</TABLE>&nbsp;";
+
+  print "<table width='99%'><tr align=right><td>";
+  print startform(-method=>'POST',-action=>$selfurl),
+  hidden('menu','nets'),hidden('list',param('list')),
+  hidden('csv','1'),
+  submit(-name=>'results.csv',-value=>'Download CSV');
+  print end_form;
+  print "</td></tr></table>\n";
+
 }
-
-
-
 
 1;
 # eof

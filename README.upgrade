@@ -23,7 +23,7 @@ GENERAL UPGRADE PROCEDURE
     For example script for converting from 1.0 to 1.1
     would be named as: dbconvert_1.0to1.1.sql
 
- 3) run upgrade scripts: psql sauron -f <filename>
+ 3) run upgrade scripts: ./runsql sql/<filename>
    
  4) vacuum database: psql sauron -c 'VACUUM ANALYZE;'
     (running 'VACUUM FULL' might be good idea, too)

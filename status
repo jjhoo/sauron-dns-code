@@ -51,7 +51,9 @@ if ($opt_versions) {
   print "DBI: ",$DBI::VERSION,"\n" if ($DBI::VERSION);
   print "Net::DNS: ",$Net::DNS::VERSION,"\n";
   print "Net::IP: ",$Net::IP::VERSION,"\n";
-  print "Net::Netmask: ",$Net::Netmask::VERSION,"\n\n";
+  print "Net::Netmask: ",$Net::Netmask::VERSION,"\n";
+  print "NetAddr::IP: ",$NetAddr::IP::VERSION,"\n"  if ($NetAddr::IP::VERSION); # For IPv6.
+  print "\n";
 
   print "Sauron::Sauron: ",($Sauron::Sauron::VERSION =~ /,v\s+(\S+)\s/),"\n";
   print "Sauron::BackEnd: ",($Sauron::BackEnd::VERSION =~ /,v\s+(\S+)\s/),"\n";
@@ -268,11 +270,11 @@ $timeout=$USER_TIMEOUT;
 get_who_list(\@who,$timeout);
 
 if (@who > 0) {
-  printf("%-8s %-22s %-15s %-6s %s\n",'USER','NAME','FROM','IDLE','LOGIN')
+  printf("%-8s %-22s %-39s %-6s %s\n",'USER','NAME','FROM','IDLE','LOGIN') # 15 -> 39 for IPv6.
     unless ($opt_quiet);
 
   for $i(0..$#who) {
-    printf("%-8s %-22s %-15s %-6s %s\n",
+    printf("%-8s %-22s %-39s %-6s %s\n", # 15 -> 39 for IPv6.
 	   $who[$i][0],$who[$i][1],$who[$i][2],$who[$i][3],$who[$i][4]);
   }
 } else {

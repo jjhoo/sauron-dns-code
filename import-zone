@@ -6,7 +6,7 @@
 # $Id$
 #
 require 5;
-use Net::Netmask;
+# use Net::Netmask; # Not used for IPv6.
 use Getopt::Long;
 use Sauron::DB;
 use Sauron::Util;
@@ -81,7 +81,8 @@ if ($opt_group) {
 }
 
 fatal("import of 'reverse' zones not supported")
-    if ($zonename =~ /\.in-addr\.arpa\.?$/);
+#   if ($zonename =~ /\.in-addr\.arpa\.?$/);
+    if ($zonename =~ /\.(in-addr|ip6)\.arpa\.?$/); # For IPv6.
 
 if ($zonefile) {
     process_zonefile($zonefile,$zonename,\%zonedata,0);
@@ -195,7 +196,7 @@ foreach $host (sort keys %zonedata) {
     }
   }
 
-  fatal("empty hostname adfter stripping origin: $host") unless ($host2);
+  fatal("empty hostname after stripping origin: $host") unless ($host2);
   print "host: $host ($host2) (type=$hosttype)\n" if ($opt_verbose);
 
   $mxlist = db_build_list_str($rec->{MX});
@@ -213,7 +214,7 @@ foreach $host (sort keys %zonedata) {
 
   undef @ip_l;
   for $k (0..$#{$rec->{A}}) {
-    # print "A=",$rec->{A}->[$k],"\n";
+    # print "A/AAAA=",$rec->{A}->[$k],"\n";
     push @ip_l, [0,$rec->{A}->[$k],'true','true'];
   }
   undef @ns_l;

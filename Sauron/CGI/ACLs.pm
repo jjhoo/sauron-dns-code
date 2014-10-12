@@ -1,7 +1,7 @@
 # Sauron::CGI::ACLs.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2005.
-# $Id$
+# $Id:$
 #
 package Sauron::CGI::ACLs;
 require Exporter;
@@ -14,7 +14,7 @@ use Sauron::CGI::Utils;
 use strict;
 use vars qw($VERSION @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
+$VERSION = '$Id:$ ';
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
