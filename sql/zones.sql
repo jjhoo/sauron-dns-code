@@ -61,5 +61,5 @@ CREATE TABLE zones (
        transfer_source INET,  /* transfer-source (optional) */
 
        CONSTRAINT  zones_key UNIQUE (name,server)
-) INHERITS(common_fields);
+) INHERITS(common_fields) WITH OIDS;
 

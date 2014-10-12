@@ -20,7 +20,7 @@ CREATE TABLE leases (
       uid	   TEXT, /* dhcp uid */
       hostname     TEXT, /* dhcp hostname */
       info	   TEXT  /* extra info */
-);
+) WITH OIDS;
 
 CREATE INDEX leases_mac_index ON leases (mac);
 CREATE INDEX leases_ip_index ON leases (ip);

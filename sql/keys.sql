@@ -50,4 +50,4 @@ CREATE TABLE keys (
 	comment     TEXT,
 
 	CONSTRAINT  keyname_key UNIQUE(name,ref,type)
-) INHERITS(common_fields);
+) INHERITS(common_fields) WITH OIDS;

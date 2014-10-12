@@ -75,5 +75,5 @@ CREATE TABLE hosts (
        CONSTRAINT  hostname_key UNIQUE (domain,zone),
        CONSTRAINT  ether_key UNIQUE(ether,zone),
        CONSTRAINT  asset_key UNIQUE(asset_id,zone)
-) INHERITS(common_fields);
+) INHERITS(common_fields) WITH OIDS;
 

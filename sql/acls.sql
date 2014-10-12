@@ -16,5 +16,7 @@ CREATE TABLE acls (
        comment	    TEXT,
 
        CONSTRAINT   acls_key UNIQUE(name,server)
-) INHERITS(common_fields);
+)
+INHERITS(common_fields)
+WITH OIDS;
 

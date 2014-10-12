@@ -97,6 +97,6 @@ CREATE TABLE servers (
 	comment		TEXT,
 	
 	CONSTRAINT	servers_name_key UNIQUE(name)
-) INHERITS(common_fields);
+) INHERITS(common_fields) WITH OIDS;
 
 

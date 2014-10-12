@@ -28,11 +28,12 @@ CREATE TABLE user_rights (
                                 11=deletemask (hostname),
 	                        12=reqhostfield,
 	                        13=privilege flags (AREC,CNAME,MX,...),
+				14=new host name template,
 				100=remit (asset management),
 				101=asset management flags  */
 	rref	INT NOT NULL, /* ptr to table specified by type field */
 	rule	CHAR(40) /* R,RW,RWS or regexp */     
-);
+) WITH OIDS;
 
 CREATE INDEX user_rights_ref_index ON user_rights (type,ref);
 
