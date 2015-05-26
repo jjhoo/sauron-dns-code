@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # status -- utlity to query/modify system status
 #

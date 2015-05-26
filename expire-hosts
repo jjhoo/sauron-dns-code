@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # expire-hosts - utility to expire hosts w/o recent dhcp activity
 #

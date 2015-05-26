@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # createtables -- utlity to create all the necessary
 #                 tables for Sauron

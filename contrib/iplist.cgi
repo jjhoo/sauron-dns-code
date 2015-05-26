@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # iplist.cgi -- simple CGI wrapper for export-ip-list command
 #

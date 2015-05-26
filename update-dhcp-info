@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # update-dhcp-info  reads dhcpd syslog entries and updates host dhcp_date
 #                   field in hosts table (for given server)

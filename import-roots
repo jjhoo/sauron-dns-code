@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # import-roots  imports root servers from named.roots (named.ca) file.
 #

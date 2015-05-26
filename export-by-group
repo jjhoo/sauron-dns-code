@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/opt/sauron
+#!/usr/bin/perl
 #
 # export-by-group  ... searches hosts by group
 #

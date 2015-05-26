@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # check-pending -- utility (to be run from cron) to check for pending host
 #                  changes in Sauron database
