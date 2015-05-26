@@ -1,7 +1,6 @@
 #!/usr/bin/perl -I/usr/local/sauron
 #
 # browser.cgi
-# $Id$
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>, 2001-2005.
 # All Rights Reserved.

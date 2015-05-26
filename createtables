@@ -4,7 +4,6 @@
 #                 tables for Sauron
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2002-2005.
-# $Id$
 #
 require 5;
 use Getopt::Long;

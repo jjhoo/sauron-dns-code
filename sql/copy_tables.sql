@@ -1,6 +1,5 @@
 /* copy_tables.sql
  *
- * $Id$
  */
 
 

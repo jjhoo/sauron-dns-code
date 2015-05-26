@@ -3,7 +3,6 @@
 # export-vmps  generates VMPS configuration file (from given server)
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003.
-# $Id$
 #
 require 5;
 use Getopt::Long;

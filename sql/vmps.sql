@@ -1,6 +1,5 @@
 /* vmps table creation
  *
- * $Id$
  */
 
 /** VMPS domain definitions, linked to a server record. 

@@ -3,7 +3,6 @@
 # import-dhcp - imports ISC DHCPD configuration
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2002,2003.
-# $Id$
 #
 require 5;
 use Net::Netmask;

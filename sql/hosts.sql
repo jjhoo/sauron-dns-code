@@ -4,7 +4,6 @@
  * can describe host,subdomain delegation,plain mx entry,alias (cname),
  * printer, or glue records (for delegations). 
  *
- * $Id$
  */
 
 /** This table contains host entries for a zone. **/

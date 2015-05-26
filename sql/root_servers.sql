@@ -1,6 +1,5 @@
 /* root_Servers table creation
  *
- * $Id$
  */
 
 /** This table contains root server definitions. **/

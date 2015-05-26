@@ -3,7 +3,6 @@
  * table to store zone specific data 
  * (zone usually have bunch of host table records linked to it)
  *
- * $Id$
  */
 
 /** This table contains zone definitions of a server. **/

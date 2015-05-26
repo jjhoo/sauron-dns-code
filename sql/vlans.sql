@@ -1,6 +1,5 @@
 /* vlans table creation
  *
- * $Id$
  */
 
 /** "VLAN" (Layer-2 networks/shared networks) descriptions, 

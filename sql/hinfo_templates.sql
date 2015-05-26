@@ -1,6 +1,5 @@
 /* hinfo_templates table creation
  *
- * $Id$
  */
 
 /** HINFO templates table contains list of default values

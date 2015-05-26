@@ -4,7 +4,6 @@
 #                   field in hosts table (for given server)
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2001-2005.
-# $Id$
 #
 require 5;
 use Getopt::Long;

@@ -1,6 +1,5 @@
 /* history table creation
  *
- * $Id$
  */
 
 /** history table contains "log" data of modifications done to the

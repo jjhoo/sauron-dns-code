@@ -1,6 +1,5 @@
 /* common table(s) creation
  *
- * $Id$
  */
 
 

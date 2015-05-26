@@ -1,6 +1,5 @@
 /* a_entries table creation
  *
- * $Id$
  */
 
 /** Addresses (A records) for hosts, linked to a host record. **/

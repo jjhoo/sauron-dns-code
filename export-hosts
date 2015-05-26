@@ -3,7 +3,6 @@
 # export-hosts  generates list of IPs in use for given neworks
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2004.
-# $Id$
 #
 require 5;
 use Getopt::Long;

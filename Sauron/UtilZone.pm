@@ -1,7 +1,6 @@
 # Sauron::UtilZone.pm - BIND zone file reading/parsing routines
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000,2002.
-# $Id$
 #
 package Sauron::UtilZone;
 require Exporter;
@@ -10,9 +9,7 @@ use Net::DNS;
 use Net::IP qw(:PROC);
 use Sauron::Util;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

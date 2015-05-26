@@ -1,6 +1,5 @@
 /* group_entries table creation
  *
- * $Id$
  */
 
 /** subgroup memberships, pointers to group records, 

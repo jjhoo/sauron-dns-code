@@ -3,7 +3,6 @@
 # moduser - utility to modify user/group rights
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2004.
-# $Id$
 #
 require 5;
 use Time::Local;

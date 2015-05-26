@@ -3,7 +3,6 @@
  * table to store server specific data 
  * (server can have multiple zones linked to it) 
  *
- * $Id$
  */
 
 /** This table contains servers that are managed with this system.

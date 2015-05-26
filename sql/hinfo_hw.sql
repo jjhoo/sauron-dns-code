@@ -1,7 +1,6 @@
 /**************************************************************************
  * hinfo_hw.sql  -- default HINFO hardware template entries
  *
- * $Id$
  */
 
 INSERT INTO hinfo_templates (hinfo,type,pri) VALUES('PC',0,1);

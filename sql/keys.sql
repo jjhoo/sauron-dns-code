@@ -1,6 +1,5 @@
 /* keys table creation
  *
- * $Id$
  */
 
 /** This table contains TSIG/DNSSEC keys.  **/

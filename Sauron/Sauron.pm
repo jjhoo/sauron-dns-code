@@ -1,7 +1,6 @@
 # Sauron::Sauron.pm -- configuration file parsing and default settings
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2003-2007.
-# $Id$
 #
 package Sauron::Sauron;
 require Exporter;
@@ -10,9 +9,10 @@ use MIME::Base64 qw(decode_base64);
 use strict;
 use vars qw($VERSION $CONF_FILE_PATH @ISA @EXPORT);
 
-$VERSION = '$Id$ ';
-$CONF_FILE_PATH = '__CONF_FILE_PATH__';
-
+BEGIN {
+    $VERSION = '0.7.4';
+    $CONF_FILE_PATH = '/etc/sauron';
+}
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
@@ -24,12 +24,9 @@ $CONF_FILE_PATH = '__CONF_FILE_PATH__';
 	     print_browser_config
 	    );
 
-
-
 sub sauron_version() {
-  return "0.7.3"; # current Sauron version
+  return $VERSION;
 }
-
 
 sub set_defaults() {
   undef $main::CONFIG_FILE;

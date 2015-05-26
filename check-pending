@@ -3,7 +3,6 @@
 # check-pending -- utility (to be run from cron) to check for pending host
 #                  changes in Sauron database
 #
-# $Id$
 #
 require 5;
 use Getopt::Long;

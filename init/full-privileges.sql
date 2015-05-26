@@ -1,6 +1,5 @@
 /* full-privileges.sql  - code to grant user full privileges to the database
  *
- * $Id$
  */
 
 GRANT ALL ON groups TO :user:;

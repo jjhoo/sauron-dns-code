@@ -1,16 +1,12 @@
 # Sauron::DB.pm  -- Sauron database interface routines using Pg.pm module
 #
-# $Id$
-#
 package Sauron::DB;
 require Exporter;
 use Time::Local;
 use Pg;
 use Sauron::Util;
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(

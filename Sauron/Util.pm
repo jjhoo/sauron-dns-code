@@ -1,7 +1,6 @@
 # Sauron::Util.pm
 #
 # Copyright (c) Timo Kokkonen <tjko@iki.fi>  2000-2003,2005.
-# $Id$
 #
 package Sauron::Util;
 require Exporter;
@@ -10,9 +9,7 @@ use Digest::MD5;
 use Net::Netmask;
 use POSIX qw(strftime);
 use strict;
-use vars qw($VERSION @ISA @EXPORT);
-
-$VERSION = '$Id$ ';
+use vars qw(@ISA @EXPORT);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
