@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # import-ethers  imports Ethernet card manufacturer codes&descriptions
 #                from text file (Ethernet.txt or IEEE's oui.txt)

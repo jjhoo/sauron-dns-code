@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # import - imports BIND configuration/databases
 #

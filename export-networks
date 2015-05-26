@@ -1,4 +1,4 @@
-#!/usr/bin/perl -I/usr/local/sauron
+#!/usr/bin/perl
 #
 # export-networks  generates /etc/networks file (from given server)
 #
