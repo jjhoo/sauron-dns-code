@@ -1,0 +1,8 @@
+^MANIFEST\.
+^Makefile$
+^MakeMaker-\d
+
+^blib/
+^debian/
+
+\B.git\b
