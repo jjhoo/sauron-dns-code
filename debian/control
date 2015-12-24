@@ -1,0 +1,16 @@
+Source: sauron
+Section: perl
+Priority: optional
+Maintainer: Jani Hakala <jjhakala@gmail.com>
+Build-Depends: debhelper (>= 9)
+Build-Depends-Indep: perl
+Standards-Version: 3.9.6
+Homepage: http://sauron.jyu.fi/
+
+Package: sauron
+Architecture: all
+Depends: ${misc:Depends}, ${perl:Depends},
+ libcrypt-rc5-perl, libdbd-pg-perl, libnet-netmask-perl,
+ libnet-dns-perl, adduser
+Description: Free DNS & DHCP management system
+ Sauron is a scalable system for management of DNS & DHCP services.

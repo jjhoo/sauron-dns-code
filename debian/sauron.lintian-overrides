@@ -1,0 +1,3 @@
+sauron binary: non-standard-file-perm	etc/sauron/config*
+sauron binary: non-standard-dir-in-usr 	usr/sauron/
+sauron binary: file-in-unusual-dir 	usr/sauron/*

@@ -1,0 +1,35 @@
+#!/usr/bin/make -f
+
+TMP = $(CURDIR)/debian/sauron
+
+override_dh_auto_configure:
+	perl Makefile.PL INSTALLDIRS=vendor
+
+override_dh_auto_install:
+	make pure_install DESTDIR=$(TMP)
+	mkdir -p $(TMP)/usr/lib/sauron/cgi-bin
+
+	mv $(TMP)/usr/bin/* $(TMP)/usr/lib/sauron
+	mkdir -p $(TMP)/etc/sauron
+	mkdir -p $(TMP)/usr/lib/sauron/cgi
+
+	install --mode=0600 config.in $(TMP)/etc/sauron/config
+	install --mode=0600 config-browser.in $(TMP)/etc/sauron/config-browser
+
+	install --mode=0755 cgi/browser.cgi $(TMP)/usr/lib/sauron/cgi-bin
+	install --mode=0755 cgi/sauron.cgi $(TMP)/usr/lib/sauron/cgi-bin
+
+override_dh_fixperms:
+	dh_fixperms
+
+	chmod 0600 $(TMP)/etc/sauron/*
+
+override_dh_clean:
+	rm -f Makefile.old Makefile MANIFEST
+	dh_clean
+
+gitarchive:
+	git archive --format=tar --prefix=sauron-0.7.4/ HEAD . | xz -v > ../sauron_0.7.4.orig.tar.xz
+
+%:
+	dh $@

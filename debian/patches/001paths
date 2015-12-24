@@ -1,0 +1,81 @@
+Index: sauron-dns-code/config-browser.in
+===================================================================
+--- sauron-dns-code.orig/config-browser.in
++++ sauron-dns-code/config-browser.in
+@@ -8,7 +8,7 @@
+ # general configuration options
+ 
+ # base directory for Sauron install
+-$PROG_DIR = "/usr/local/sauron/";
++$PROG_DIR = "/usr/lib/sauron/";
+ 
+ ########################################################################
+ # database connection setup
+Index: sauron-dns-code/config.in
+===================================================================
+--- sauron-dns-code.orig/config.in
++++ sauron-dns-code/config.in
+@@ -8,13 +8,13 @@
+ # general configuration options (you need to configure at least these)
+ 
+ # Base directory for Sauron install
+-$PROG_DIR = "/usr/local/sauron/";
++$PROG_DIR = "/usr/lib/sauron/";
+ 
+ # directory for logfiles
+ $LOG_DIR = "$PROG_DIR/logs/";
+ 
+ # unique server ID (if using multiple www-servers)
+-$SERVER_ID = "fooserver";
++$SERVER_ID = "localhost";
+ 
+ 
+ ########################################################################
+@@ -33,7 +33,6 @@ $DB_USER = "foo";
+ # database (user) password
+ $DB_PASSWORD = "bar";
+ 
+-
+ #########################################################################
+ # advanced configuration options
+ 
+Index: sauron-dns-code/cgi/browser.cgi
+===================================================================
+--- sauron-dns-code.orig/cgi/browser.cgi
++++ sauron-dns-code/cgi/browser.cgi
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl -I/usr/local/sauron
++#!/usr/bin/perl -I/usr/lib/sauron
+ #
+ # browser.cgi
+ #
+Index: sauron-dns-code/cgi/sauron.cgi
+===================================================================
+--- sauron-dns-code.orig/cgi/sauron.cgi
++++ sauron-dns-code/cgi/sauron.cgi
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl -I/usr/local/sauron
++#!/usr/bin/perl -I/usr/lib/sauron
+ #
+ # sauron.cgi
+ #
+Index: sauron-dns-code/contrib/iplist.cgi
+===================================================================
+--- sauron-dns-code.orig/contrib/iplist.cgi
++++ sauron-dns-code/contrib/iplist.cgi
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl -I/usr/local/sauron
++#!/usr/bin/perl -I/usr/lib/sauron
+ #
+ # iplist.cgi -- simple CGI wrapper for export-ip-list command
+ #
+Index: sauron-dns-code/sql/convertdb_1.0b2_1.0
+===================================================================
+--- sauron-dns-code.orig/sql/convertdb_1.0b2_1.0
++++ sauron-dns-code/sql/convertdb_1.0b2_1.0
+@@ -1,4 +1,4 @@
+-#!/usr/bin/perl -I/usr/local/sauron
++#!/usr/bin/perl -I/usr/lib/sauron
+ #
+ # convert database format (beta) to 1.0
+ #

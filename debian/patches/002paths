@@ -1,0 +1,13 @@
+Index: sauron-0.7.3/createtables
+===================================================================
+--- sauron-0.7.3.orig/createtables	2015-02-18 19:18:21.000000000 +0200
++++ sauron-0.7.3/createtables	2015-02-18 19:19:10.000000000 +0200
+@@ -55,7 +55,7 @@
+ 
+ for $i (0..$#TABLES) {
+   print "Running: $TABLES[$i]...\n";
+-  $res=system("$PROG_DIR/runsql","$PROG_DIR/$TABLES[$i]");
++  $res=system("$PROG_DIR/runsql", "/usr/share/sauron/$TABLES[$i]");
+   fatal("failed to create all tables") if ($res);
+ }
+ 

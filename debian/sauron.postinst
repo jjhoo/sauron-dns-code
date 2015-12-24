@@ -1,0 +1,23 @@
+#!/bin/sh
+
+set -e
+
+case "$1" in
+    configure)
+	adduser --quiet --system --group --disabled-password sauron
+	if [ ! -x /var/log/sauron ]; then
+	    install -d -m 0750 -o sauron -g sauron /var/log/sauron
+	fi
+
+	chown -R sauron:sauron /etc/sauron
+	chmod 0750 /etc/sauron
+    ;;
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0
