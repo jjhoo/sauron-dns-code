@@ -6,8 +6,9 @@ WriteMakefile(NAME            => 'Sauron',
               VERSION_FROM    => 'Sauron/Sauron.pm',
               AUTHOR          => 'Timo Kokkonen E<lt>tjko[at]iki.fiE<gt>',
               EXE_FILES       => [ qw(
-		  sauron
+                  sauron
                   addgroup addhosts adduser
+                  check-pending
                   deluser
                   moduser modhosts
                   expire-hosts
