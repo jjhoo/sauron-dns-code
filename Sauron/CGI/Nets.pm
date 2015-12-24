@@ -217,7 +217,7 @@ sub menu_handler {
       }
 
       display_form(\%vmps,\%vmps_form);
-      print p,startform(-method=>'GET',-action=>$selfurl),
+      print p,start_form(-method=>'GET',-action=>$selfurl),
             hidden('menu','nets'),hidden('vmps_id',$vm_id);
       print submit(-name=>'sub',-value=>'Edit'), "  ",
             submit(-name=>'sub',-value=>'Delete'), " &nbsp;&nbsp;&nbsp; "
@@ -250,7 +250,7 @@ sub menu_handler {
       }
 
       display_form(\%vlan,\%vlan_form);
-      print p,startform(-method=>'GET',-action=>$selfurl),
+      print p,start_form(-method=>'GET',-action=>$selfurl),
             hidden('menu','nets'),hidden('vlan_id',$v_id);
       print submit(-name=>'sub',-value=>'Edit'), "  ",
             submit(-name=>'sub',-value=>'Delete'), " &nbsp;&nbsp;&nbsp; "
@@ -448,7 +448,7 @@ sub menu_handler {
     print "<TABLE width=\"100%\"><TR><TD valign=\"top\">";
 
     display_form(\%net,\%net_info_form);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','nets'),
           submit(-name=>'sub',-value=>'<-- Back'),
           hidden('net_id',$id),end_form;
@@ -520,7 +520,7 @@ sub menu_handler {
 	push @pingsweep, [$status,$ip,$domain,$info];
       }
 
-      print startform(-method=>'POST',-action=>$selfurl),
+      print start_form(-method=>'POST',-action=>$selfurl),
 	    hidden('menu','nets'),hidden('net_id',$id),
             submit(-name=>'foobar',-value=>' <-- '),end_form;
       display_list(['Status','IP','Domain','Info'],
@@ -542,7 +542,7 @@ sub menu_handler {
 	get_vlan_list($serverid,\%vlan_list_hash,\@vlan_list);
     }
     display_form(\%net,\%net_form);
-    print p,"<TABLE><TR><TD> ",startform(-method=>'GET',-action=>$selfurl),
+    print p,"<TABLE><TR><TD> ",start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','nets');
     print submit(-name=>'sub',-value=>'Edit'), "  ",
           submit(-name=>'sub',-value=>'Delete'), " &nbsp;&nbsp;&nbsp; "
@@ -555,7 +555,7 @@ sub menu_handler {
     my $old_sub = param('sub');
     param('menu','hosts');
     param('sub','browse');
-    print startform(-method=>'GET',-action=>$selfurl),
+    print start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','hosts'),hidden('sub','browse'),
 	  hidden('bh_type','1'),hidden('bh_sdtype','0'),hidden('bh_order','2'),
 	  hidden('bh_size','3'),hidden('bh_stype','0'),hidden('bh_grp','-1'),

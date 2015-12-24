@@ -331,7 +331,7 @@ sub edit_magic($$$$$$$) {
   }
 
   print h2("Edit $name:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu',$menu),hidden('sub','Edit');
   form_magic($prefix,\%h,$form);
   print submit(-name=>$prefix . '_submit',-value=>'Apply'), "  ",
@@ -367,7 +367,7 @@ sub add_magic($$$$$$) {
   }
 
   print h2("New $name:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu',$menu),hidden('sub',$prefix);
   form_magic($prefix,$data,$form);
   print submit(-name=>$prefix . '_submit',-value=>"Create $name")," ",
@@ -414,7 +414,7 @@ sub delete_magic($$$$$$$) {
   }
 
   print h2("Delete $name:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu',$menu),hidden('sub','Delete'),
           hidden($prefix . "_id",$id);
   print submit(-name=>$prefix . '_confirm',-value=>'Delete'),"  ",

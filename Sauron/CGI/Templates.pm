@@ -265,7 +265,7 @@ sub menu_handler {
       undef @q;
       db_query("SELECT COUNT(id) FROM hosts WHERE mx=$mx_id;",\@q);
       print p,"$q[0][0] host records use this template.",
-	      startform(-method=>'GET',-action=>$selfurl);
+	      start_form(-method=>'GET',-action=>$selfurl);
       if ($q[0][0] > 0) {
 	get_mx_template_list($zoneid,\%lsth,\@lst,$perms->{alevel});
 	print p,"Change those host records to point to: ",
@@ -312,7 +312,7 @@ sub menu_handler {
       undef @q;
       db_query("SELECT COUNT(id) FROM hosts WHERE wks=$wks_id;",\@q);
       print p,"$q[0][0] host records use this template.",
-	      startform(-method=>'GET',-action=>$selfurl);
+	      start_form(-method=>'GET',-action=>$selfurl);
       if ($q[0][0] > 0) {
 	get_wks_template_list($serverid,\%lsth,\@lst,$perms->{alevel});
 	print p,"Change those host records to point to: ",
@@ -393,7 +393,7 @@ sub menu_handler {
       return;
     }
     display_form(\%mxhash,\%mx_template_form);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','templates');
     print submit(-name=>'sub',-value=>'Edit'), "  ",
           submit(-name=>'sub',-value=>'Delete')
@@ -408,7 +408,7 @@ sub menu_handler {
       return;
     }
     display_form(\%wkshash,\%wks_template_form);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','templates');
     print submit(-name=>'sub',-value=>'Edit'), "  ",
           submit(-name=>'sub',-value=>'Delete')
@@ -423,7 +423,7 @@ sub menu_handler {
       return;
     }
     display_form(\%pchash,\%printer_class_form);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','templates');
     print submit(-name=>'sub',-value=>'Edit'), "  ",
           submit(-name=>'sub',-value=>'Delete')
@@ -438,7 +438,7 @@ sub menu_handler {
       return;
     }
     display_form(\%hinfohash,\%hinfo_template_form);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','templates');
     print submit(-name=>'sub',-value=>'Edit'), "  ",
           submit(-name=>'sub',-value=>'Delete')
