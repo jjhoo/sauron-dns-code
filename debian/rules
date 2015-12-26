@@ -28,7 +28,7 @@ override_dh_clean:
 	dh_clean
 
 gitarchive:
-	git archive --format=tar --prefix=sauron-0.7.4/ HEAD . | xz -v > ../sauron_0.7.4.orig.tar.xz
+	git archive --format=tar --prefix=sauron-0.74/ HEAD . | xz -v > ../sauron_0.74.orig.tar.xz
 
 %:
 	dh $@

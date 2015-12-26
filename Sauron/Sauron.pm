@@ -10,7 +10,7 @@ use strict;
 use vars qw($VERSION $CONF_FILE_PATH @ISA @EXPORT);
 
 BEGIN {
-    $VERSION = '0.7.4';
+    $VERSION = '0.74';
     $CONF_FILE_PATH = '/etc/sauron';
 }
 

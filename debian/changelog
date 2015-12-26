@@ -1,3 +1,9 @@
+sauron (0.74-1) unstable; urgency=medium
+
+  * Change versioning scheme to be like with Perl modules.
+
+ -- Jani Hakala <jjhakala@gmail.com>  Sat, 26 Dec 2015 07:51:47 +0200
+
 sauron (0.7.4-1) unstable; urgency=low
 
   * Initial Release.
