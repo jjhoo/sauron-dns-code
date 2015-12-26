@@ -11,7 +11,6 @@ override_dh_auto_install:
 
 	mv $(TMP)/usr/bin/* $(TMP)/usr/lib/sauron
 	mkdir -p $(TMP)/etc/sauron
-	mkdir -p $(TMP)/usr/lib/sauron/cgi
 
 	install --mode=0600 config.in $(TMP)/etc/sauron/config
 	install --mode=0600 config-browser.in $(TMP)/etc/sauron/config-browser
