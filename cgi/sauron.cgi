@@ -604,10 +604,10 @@ sub login_auth() {
 	      "<font color=\"white\">$SERVER_ID &nbsp; </font></td>",
 	      "</TR><TR><TD colspan=3><CENTER>\n";
 	print h1("Login ok!"),p,"<TABLE><TR><TD>",
-	      startform(-method=>'POST',-action=>$s_url),$arg_str,
+	      start_form(-method=>'POST',-action=>$s_url),$arg_str,
 	      submit(-name=>'submit',-value=>'No Frames'),end_form,
 	      "</TD><TD> ",
-	      startform(-method=>'POST',-action=>"$s_url/frames"),$arg_str,
+	      start_form(-method=>'POST',-action=>"$s_url/frames"),$arg_str,
 	      submit(-name=>'submit',-value=>'Frames'),end_form,
 	      "</TD></TR></TABLE>";
 

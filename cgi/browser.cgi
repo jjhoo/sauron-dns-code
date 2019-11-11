@@ -187,7 +187,7 @@ if (param('reset')) {
   param('id','');
 }
 
-print startform(-method=>'POST',-action=>$selfurl),
+print start_form(-method=>'POST',-action=>$selfurl),
       "Search type: ",
       popup_menu(-name=>'type',-values=>\@search_types), " ",
       textfield(-name=>'mask',-size=>30,-maxlength=>40), " ",

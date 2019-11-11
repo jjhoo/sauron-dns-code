@@ -146,7 +146,7 @@ sub menu_handler {
       }
     }
     print h2("Change password:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu','login'),hidden('sub','passwd');
     form_magic('passwd',\%h,\%change_passwd_form);
     print submit(-name=>'passwd_submit',-value=>'Change password')," ",
@@ -223,7 +223,7 @@ sub menu_handler {
   }
   elsif ($sub eq 'session') {
     return if (check_perms('superuser',''));
-    print startform(-method=>'POST',-action=>$selfurl),
+    print start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu','login'),hidden('sub','session');
     form_magic('session',\%h,\%session_id_form);
     print submit(-name=>'session_submit',-value=>'Select'), end_form, "<HR>";

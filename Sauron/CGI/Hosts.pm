@@ -648,7 +648,7 @@ sub menu_handler {
 	print h3($newip);
 	$newip=$host{ip}[1][1];
       }
-      print p,startform(-method=>'GET',-action=>$selfurl),
+      print p,start_form(-method=>'GET',-action=>$selfurl),
             hidden('menu','hosts'),hidden('h_id',$id),hidden('sub','Move'),
             hidden('move_confirm'),hidden('move_net'),p,"<TABLE>",
 	    Tr(td("New IP:"),
@@ -725,7 +725,7 @@ sub menu_handler {
     db_query("SELECT net FROM nets WHERE server=$serverid AND subnet=true " .
 	     "AND net >> '$ip';",\@q);
     print h2("Move host to another subnet or zone: ");
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','hosts'),hidden('h_id',$id),
           hidden('sub','Move'),
           "Move host to: <TABLE><TR><TD>",
@@ -861,7 +861,7 @@ sub menu_handler {
       }
     }
 
-    print h2("Edit host:"),p,startform(-method=>'POST',-action=>$selfurl),
+    print h2("Edit host:"),p,start_form(-method=>'POST',-action=>$selfurl),
 	  hidden('menu','hosts'),hidden('sub','Edit');
     form_magic('h',\%host,$hform);
     print submit(-name=>'h_submit',-value=>'Apply')," ",
@@ -1324,7 +1324,7 @@ sub menu_handler {
      if ($main::SAURON_NMAP_PROG && param('bh_type') == 1 &&
 	!check_perms('level',$main::ALEVEL_NMAP,1)) {
 
-	 print startform(-method=>'POST',-action=>$selfurl),
+	 print start_form(-method=>'POST',-action=>$selfurl),
 	       hidden('menu','hosts'),hidden('sub','browse'),
 	       hidden('bh_page',$page),
 	       hidden('lastsearch','1'),hidden('pingsweep','1');
@@ -1335,7 +1335,7 @@ sub menu_handler {
       print "</td><td><div align=right>";
 
       my $csv_timestamp_v=[sort keys %csv_timestamp];
-      print startform(-method=>'POST',-action=>$selfurl),
+      print start_form(-method=>'POST',-action=>$selfurl),
 	    hidden('menu','hosts'),hidden('sub','browse'),
             hidden('lastsearch','1'),
             "CSV Timestamps&nbsp;",
@@ -1507,7 +1507,7 @@ sub menu_handler {
     }
     print h2("Add $host_types{$type} record");
 
-    print startform(-method=>'POST',-action=>$selfurl),
+    print start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu','hosts'),hidden('sub','add'),hidden('type',$type);
     print hidden('copy_id') if (param('copy_id'));
     form_magic('addhost',\%data,$newhostform);
@@ -1555,7 +1555,7 @@ sub menu_handler {
     $host_form{bgcolor}='#ffcccc'
 	if ($host{expiration} > 0 && $host{expiration} < time());
 #    $host_form{bgcolor}='#ccffff' if ($host{type}==101);
-    print p,startform(-method=>'GET',-action=>$selfurl),
+    print p,start_form(-method=>'GET',-action=>$selfurl),
           hidden('menu','hosts'),hidden('h_id',$id);
     print "<table width=\"99%\"><tr><td align=\"left\">",
           submit(-name=>'sub',-value=>'Refresh')," &nbsp; ";
