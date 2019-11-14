@@ -200,7 +200,7 @@ sub menu_handler {
   new_zone_edit:
     unless (param('addzone_re_edit')) { $data{type}='M'; }
     print h2("New Zone:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu','zones'),hidden('sub','add');
     form_magic('addzone',\%data,\%new_zone_form);
     print submit(-name=>'add_submit',-value=>"Create Zone"),end_form;
@@ -261,7 +261,7 @@ sub menu_handler {
 
     $data{source}=$zone;
     print h2("Copy Zone:"),p,
-          startform(-method=>'POST',-action=>$selfurl),
+          start_form(-method=>'POST',-action=>$selfurl),
           hidden('menu','zones'),hidden('sub','Copy');
     form_magic('copy',\%data,\%copy_zone_form);
     print submit(-name=>'copy_confirm',-value=>'Copy Zone')," ",
@@ -339,7 +339,7 @@ sub menu_handler {
   my $list=get_zone_list($serverid,0,0);
   my $zlimit = 50;
 
-  print startform(-method=>'GET',-action=>$selfurl),
+  print start_form(-method=>'GET',-action=>$selfurl),
         hidden('menu','zones'),hidden('sub','select'),"Zone display filter: ",
 	textfield(-name=>'select_filter',-size=>20,-maxlength=>80),"  ",
 	submit(-name=>'filter',-value=>'Go'),end_form,
@@ -349,7 +349,7 @@ sub menu_handler {
 	p,"<TABLE width=98% bgcolor=white border=0>",
         "<TR bgcolor=\"#aaaaff\">",th(['Zone','Type','Reverse','Comments']);
 
-
+  my $zcount=0;
   for $i (0 .. $#{$list}) {
     my $type=$ztypenames{$$list[$i][2]};
     my $color=$ztypecolors{$$list[$i][2]};
@@ -365,12 +365,13 @@ sub menu_handler {
     }
 
     next if ($filter && $name !~ /$filter/);
-    last if ($i >= $zlimit && ! $filter);
+    last if ($zcount >= $zlimit && ! $filter);
 
     print "<TR bgcolor=\"$color\">",td([
 	"<a href=\"$selfurl?menu=zones&selected_zone=$name\">$name</a>",
 				    $type,$rev,$comment]);
     $zonelist{$name}=$id;
+    $zcount++;
   }
   print "</TABLE><BR>";
 
