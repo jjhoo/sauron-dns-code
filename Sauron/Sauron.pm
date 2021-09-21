@@ -7,12 +7,10 @@ require Exporter;
 use Sauron::Util;
 use MIME::Base64 qw(decode_base64); 
 use strict;
-use vars qw($VERSION $CONF_FILE_PATH @ISA @EXPORT);
+use vars qw(@ISA @EXPORT);
 
-BEGIN {
-    $VERSION = '0.74';
-    $CONF_FILE_PATH = '/etc/sauron';
-}
+our $CONF_FILE_PATH = '/etc/sauron';
+our $VERSION = qv(v0.7.4);
 
 @ISA = qw(Exporter); # Inherit from Exporter
 @EXPORT = qw(
